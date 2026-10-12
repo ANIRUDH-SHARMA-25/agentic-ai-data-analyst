@@ -1,0 +1,13 @@
+date,product,category,quantity,unit_price,revenue
+2026-01-01,Wireless Mouse,Electronics,2,25.00,50.00
+2026-01-01,Notebook,Stationery,5,4.00,20.00
+2026-01-02,Coffee Mug,Home,3,12.00,36.00
+2026-01-02,Keyboard,Electronics,1,45.00,45.00
+2026-01-03,Pen Set,Stationery,4,6.00,24.00
+2026-01-03,Desk Lamp,Home,2,30.00,60.00
+2026-01-04,Wireless Mouse,Electronics,3,25.00,75.00
+2026-01-04,Notebook,Stationery,10,4.00,40.00
+2026-01-05,Coffee Mug,Home,2,12.00,24.00
+2026-01-05,Keyboard,Electronics,2,45.00,90.00
+2026-01-06,Pen Set,Stationery,6,6.00,36.00
+2026-01-06,Desk Lamp,Home,1,30.00,30.00
