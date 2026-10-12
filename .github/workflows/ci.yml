@@ -36,6 +36,8 @@ jobs:
           python -m pip check
           python -c "from backend.main import app; import streamlit; print(app.version)"
       - name: Run the complete test suite
-        run: python -m pytest -q --basetemp=.tmp/pytest
+        run: |
+          mkdir -p .tmp
+          python -m pytest -q --basetemp=.tmp/pytest
       - name: Run MOCKED deterministic evaluation
         run: python -m evaluations.benchmark
