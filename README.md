@@ -2,7 +2,7 @@
 
 A resume-focused AI/ML project that will let users upload CSV data, ask
 natural-language questions, and receive computed analysis, charts, and
-AI-generated explanations. **Phases 1-5 implement data processing, the HTTP API, one analytical agent, the Streamlit dashboard, bounded conversation memory, and mocked evaluations.**
+AI-generated explanations. **Phases 1-6 implement data processing, the HTTP API, one analytical agent, the Streamlit dashboard, bounded conversation memory, mocked evaluations, and local container/CI configuration.**
 
 ## Current capabilities
 
@@ -31,7 +31,11 @@ frontend/                     Streamlit dashboard, HTTP client, chart rules
 data/sample/                 small tracked synthetic dataset
 evaluations/                 deterministic benchmark and network-free model
 examples/                     runnable Phase 1 demonstration
-tests/                        data layer, sessions, and API tests
+tests/                        data layer, sessions, API, agent, and frontend tests
+docker/                       separate images and local deployment guide
+compose.yaml                  local-only backend/frontend services
+.github/workflows/ci.yml       key-free Python verification on main pushes/PRs
+requirements-*.txt            pinned runtime dependencies per service
 ```
 
 ## Windows setup (PowerShell)
@@ -51,7 +55,8 @@ $env:PIP_NO_CACHE_DIR = '1'
 Activation is optional; invoking the environment's Python directly avoids
 PowerShell execution-policy changes. Dependencies are pinned to tested versions.
 Health, upload, inspection, and all tests need no API key; live analysis does. `.env.example` documents optional configuration; `.env`
-files are not loaded automatically. Set environment variables in PowerShell.
+files are not loaded automatically by Python. Set environment variables in PowerShell.
+Docker Compose can read an optional .env for interpolation; see the container guide.
 
 ## Start the backend
 
@@ -383,8 +388,8 @@ and [SQLGlot](https://sqlglot.com/sqlglot.html).
 
 ## Planned phases
 
-Later phases may add real-model quality testing, Docker, and deployment.
-Stop after Phase 5; those components are not implemented here.
+Later authorized work may add real-model quality testing, security review, and
+public deployment. Stop after Phase 6; public deployment is not authorized.
 
 ## Phase 4: Streamlit dashboard
 
@@ -564,5 +569,63 @@ reserved for a later authorized phase. Normal configured live analysis remains
 available from earlier phases, but no live calls are part of Phase 5 work.
 
 See evaluations/README.md for the case inventory and result interpretation.
-Stop after Phase 5: no Docker, deployment, key onboarding, live-model benchmark,
-or additional agents are implemented.
+Phase 6 adds local container configuration and CI below. No key onboarding,
+live-model benchmark, public deployment, or additional agents were performed.
+
+
+## Phase 6: local Docker deployment and CI
+
+See [the Docker guide](docker/README.md) for Windows/D: storage preparation,
+configuration, startup, troubleshooting, key-free smoke checks, and stopping.
+The direct Python instructions above remain supported. Stop those servers before
+Compose uses the same ports. After Docker Desktop is installed and running in
+Linux-container mode, and its large disk-image storage is confirmed on D:
+
+```powershell
+Set-Location 'D:\GPT work\CODEX\agentic-ai-data-analyst'
+docker version
+docker compose version
+docker compose config --quiet
+docker compose build
+docker compose up -d --wait
+docker compose ps
+Invoke-RestMethod 'http://127.0.0.1:8000/health'
+# Open http://127.0.0.1:8501 in your browser.
+# When finished:
+docker compose stop
+```
+
+Both images use official Python 3.11 slim Bookworm, pinned direct dependencies,
+and UID/GID 10001. The backend has one Uvicorn worker; the frontend communicates
+through HTTP at http://backend:8000. Only localhost ports 8000 and 8501 are
+published. Compose configures health checks, read-only roots, bounded writable
+tmpfs, dropped capabilities, no privilege escalation, and CPU/memory/PID limits.
+These runtime settings still need verification on an actual Docker engine.
+No host directory, Docker socket, persistent upload volume, or provider key is
+copied into either image. The frontend receives no provider key at runtime.
+Direct pins and a named base-image tag simplify rebuilding, but transitive
+dependencies and base images can change; these are not immutable image locks.
+
+The single GitHub Actions workflow runs on main pushes and PRs to main using
+Ubuntu and Python 3.11. It installs the combined development requirements,
+checks dependencies/imports, runs all tests, and runs the mocked benchmark.
+Normal runner pip caching is enabled; no API secret or deployment job is used.
+
+Phase 6 local verification: **337 tests passed**, **28/28 mocked tasks passed**
+(SQL 18/18, follow-up context 3/3, rejection behavior 4/4), pip check and key-free
+imports passed. Compose passed the official specification's JSON Schema and
+the CI YAML parsed. Docker/Compose were not found on PATH or standard install
+paths, including the per-user path; WSL reported not installed. Docker Desktop
+settings/data paths were absent, so no existing Docker storage location could
+be confirmed. C: had about 18 GiB free, D: about 140 GiB. Nothing was installed,
+relocated, or deleted. **Docker CLI validation, image builds, container startup,
+health/upload/inspection, frontend connectivity, missing-key behavior, writable
+path checks, logs/restarts, and container stopping were not run.**
+Follow the manual guide when Docker is available. No real OpenAI calls occurred.
+
+This is local deployment preparation, not approval for public hosting. The
+SQL executor remains embedded in the backend process. Docker restrictions
+and SQL allowlists are defense in depth, not complete SQL isolation. UUIDs
+are not authentication; sessions disappear on restart. Access control, rate
+limiting, stronger execution isolation, and session handling need a later
+security review before public exposure. Stop after Phase 6.

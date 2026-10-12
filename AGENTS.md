@@ -1,13 +1,14 @@
 # Agentic AI Data Analyst development instructions
 
 ## Scope
-Phases 1-5 are authorized: CSV processing, internal DuckDB helpers, dataset
+Phases 1-6 are authorized: CSV processing, internal DuckDB helpers, dataset
 sessions, FastAPI, one LangChain create_agent workflow using LangGraph and
 langchain-openai, the OpenAI API, restricted SQL, and deterministic tests.
 Default to configurable gpt-4.1-mini. Phase 4 adds native Streamlit and deterministic
 Plotly charts over the existing HTTP API. Phase 5 adds bounded dataset-bound
-conversation memory and deterministic mocked evaluations. Stop after Phase 5.
-Do not add Docker, deployment, RAG/vector databases,
+conversation memory and deterministic mocked evaluations. Phase 6 adds local
+Docker Compose, basic CI, and deployment documentation. Stop after Phase 6.
+Do not add public/cloud deployment, RAG/vector databases,
 multiple agents, or background infrastructure until explicitly requested.
 
 ## Architecture and safety
@@ -48,7 +49,7 @@ use pip --no-cache-dir. Never track secrets or generated files. Only the small
 synthetic sample is tracked. Run the entire suite with D: basetemp, pip check,
 key-free API import, SQL rejection cases, and mocked upload-to-analysis checks
 before committing. Report actual checks and remaining limitations.
-Use descriptive commits; the user authorized Phase 5 commit/push to main.
+Use descriptive commits; the user authorized Phase 6 commit/push to main.
 Stop at the phase boundary.
 
 ## Frontend
@@ -66,3 +67,13 @@ data, never fresh evidence. Bound conversations, reject dataset mismatches and
 concurrent writes, and save only completed successful turns. Evaluate with fake
 models against independent numerical expectations, label reports MOCKED, and
 run the full suite and deterministic benchmark before committing.
+
+## Phase 6 deployment
+Use two official Python 3.11 slim images, non-root users, exactly one backend
+worker, HTTP between services, and host ports bound to 127.0.0.1. Keep keys
+out of build context/images/frontend; accept an optional backend key only at
+runtime. Restrict temporary writable paths and resources. Container settings
+are defense in depth, not an independent SQL sandbox. Do not install/migrate
+Docker, change Docker Desktop settings, delete user resources, expose publicly,
+or call live OpenAI. Verify Python/tests/evaluation and available Docker checks;
+report blocked Docker runtime checks accurately. Keep generated reports on D:.

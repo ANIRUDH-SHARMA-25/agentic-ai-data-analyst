@@ -1,0 +1,24 @@
+# Allow only runtime sources; no local secrets, datasets, VCS or build artifacts.
+**
+!requirements-backend.txt
+!requirements-frontend.txt
+!backend/
+!backend/**
+!frontend/
+!frontend/**
+!.streamlit/
+!.streamlit/config.toml
+!data/
+!data/sample/
+!data/sample/retail_sales.csv
+!docker/
+!docker/*.Dockerfile
+
+**/__pycache__/
+**/*.py[cod]
+**/.env
+**/.env.*
+**/secrets.toml
+**/*.pem
+**/*.key
+**/.pytest_cache/

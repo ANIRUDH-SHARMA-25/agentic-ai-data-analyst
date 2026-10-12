@@ -1,0 +1,41 @@
+name: Python verification
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: python-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENAI_API_KEY: ""
+      LANGSMITH_TRACING: "false"
+      LANGCHAIN_TRACING_V2: "false"
+      PYTHONDONTWRITEBYTECODE: "1"
+      TIKTOKEN_CACHE_DIR: ${{ github.workspace }}/.cache/tiktoken
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-backend.txt
+            requirements-frontend.txt
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Check dependencies and key-free imports
+        run: |
+          python -m pip check
+          python -c "from backend.main import app; import streamlit; print(app.version)"
+      - name: Run the complete test suite
+        run: python -m pytest -q --basetemp=.tmp/pytest
+      - name: Run MOCKED deterministic evaluation
+        run: python -m evaluations.benchmark
