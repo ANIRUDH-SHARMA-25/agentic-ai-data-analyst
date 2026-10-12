@@ -10,3 +10,5 @@ httpx==0.28.1
 langchain==1.4.4
 langchain-openai==1.7.1
 sqlglot==30.22.0
+streamlit==1.65.0
+plotly==6.9.0

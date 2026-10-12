@@ -2,7 +2,7 @@
 
 A resume-focused AI/ML project that will let users upload CSV data, ask
 natural-language questions, and receive computed analysis, charts, and
-AI-generated explanations. **Phases 1-3 implement the data layer, HTTP API, and agentic SQL analysis.**
+AI-generated explanations. **Phases 1-4 implement the data layer, HTTP API, agentic SQL analysis, and Streamlit dashboard.**
 
 ## Current capabilities
 
@@ -26,7 +26,7 @@ backend/schemas.py            typed response schemas
 backend/upload_limits.py      bounded upload request handling
 backend/data/                 CSV processing, DuckDB, sessions, restricted SQL
 backend/agent/                lazy OpenAI model config and one LangChain agent
-frontend/                     reserved for Streamlit
+frontend/                     Streamlit dashboard, HTTP client, chart rules
 data/sample/                 small tracked synthetic dataset
 evaluations/                 reserved for agent evaluation
 examples/                     runnable Phase 1 demonstration
@@ -377,6 +377,75 @@ and [SQLGlot](https://sqlglot.com/sqlglot.html).
 
 ## Planned phases
 
-Later phases may add Plotly charts, Streamlit, conversational follow-ups,
-agent evaluation, Docker, and deployment. Stop after Phase 3; none of those
-components is implemented here.
+Later phases may add conversational follow-ups, agent evaluation, Docker,
+and deployment. Stop after Phase 4; those components are not implemented here.
+
+## Phase 4: Streamlit dashboard
+
+Keep the backend running in its own PowerShell terminal. Open a second terminal:
+
+```powershell
+Set-Location 'D:\GPT work\CODEX\agentic-ai-data-analyst'
+$env:TEMP = Join-Path $PWD '.tmp'
+$env:TMP = $env:TEMP
+$env:BACKEND_URL = 'http://127.0.0.1:8000'
+$env:FRONTEND_REQUEST_TIMEOUT_SECONDS = '30'
+$env:FRONTEND_ANALYSIS_TIMEOUT_SECONDS = '300'
+.\.venv\Scripts\python.exe -m streamlit run frontend/app.py --server.address 127.0.0.1 --server.port 8501
+```
+
+Open [the dashboard](http://127.0.0.1:8501). Select a CSV and click **Load dataset**,
+or use **Try the retail sample**. Upload/inspection works without an OpenAI key.
+Configure the key only in the backend terminal for real analysis; the frontend
+never reads provider credentials. Both terminals use process environment settings,
+not automatic .env loading. Stop either server with Ctrl+C.
+
+The sidebar supports connection checking, refreshing inspection, and clearing
+the selected dataset/history. The overview shows rows, columns, missing cells,
+preview, types, and statistics. Chat responses show the explanation, result table,
+and expandable executed SQL/tool names. Each question is independent: visible
+history is not conversational model memory. Only the latest 10 questions remain.
+Changing datasets clears old results before uploading; failed inspection can be
+retried explicitly without duplicating the upload. Streamlit reruns alone perform
+no HTTP requests. Session state retains metadata and bounded responses, not an
+extra full DataFrame or raw CSV copy; Streamlit's uploader retains its input file
+while selected. No uploads are permanently stored.
+
+Charts use actual returned values and deterministic rules, with no extra model
+call or generated Python. Exactly two distinct columns must contain one numeric
+measure and unique string labels. Category comparisons become bars (at most 20
+categories); ISO dates/months/timestamps become chronologically sorted lines
+(at most 100 points). Missing numeric values remain line gaps; incomplete bar
+rows are excluded with a notice and remain in the table. Ambiguous dimensions,
+invalid/mixed dates, duplicate labels, single values, and precision-losing numbers
+remain tables. No frontend aggregation changes values. Nullable integers retain precision;
+very large integers and mixed-type columns are displayed as exact text.
+Result tables show at most
+200 rows and overview tables at most 100 columns. Charts are interactive.
+
+HTTPX uses the existing health/upload/inspection/analyze endpoints with no
+automatic retries. Connection/configuration, expiry, upload, unsupported question,
+and provider errors appear as understandable messages. Request timeout can be
+1-120 seconds and analysis timeout 1-600 (defaults 30/300). The agent can take up
+to eight configured provider timeouts plus local work; increase the frontend
+timeout when increasing backend limits. A frontend timeout does not cancel the
+backend request: avoid resubmitting immediately. The client accepts at most 2 MiB
+of response content after receiving it. UPLOAD_MAX_BYTES defaults to 5 MiB and
+should match in both processes; frontend configuration permits up to 50 MiB.
+Streamlit's server upload cap is also 5 MiB; override --server.maxUploadSize with
+the desired whole-MiB cap if increasing the configured byte limit. Backend
+validation remains authoritative.
+
+The privacy notice states that real analysis sends the question and relevant
+dataset-derived information to the configured LLM provider. This remains a
+local, single-user portfolio application, with the Phase 3 security limitations.
+
+Frontend tests cover mocked HTTP contracts/errors, faithful retail totals
+(260/150/120), chart refusal/order/missing data, session transitions, and actual
+Streamlit AppTest upload, overview, chat, charts, expiry, and configuration errors.
+All tests forbid live OpenAI generation. Run the complete suite:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q --basetemp=.tmp/pytest
+.\.venv\Scripts\python.exe -m pip check
+```
