@@ -10,7 +10,7 @@ from frontend.api_client import APIClient, APIClientError
 from frontend.charts import build_chart
 from frontend.config import FrontendSettings
 from frontend.session import (
-    MAX_HISTORY, clear_dataset, initialize_session, load_dataset, refresh_dataset, submit_question,
+    MAX_HISTORY, clear_dataset, initialize_session, load_dataset, refresh_dataset, reset_conversation, submit_question,
 )
 
 
@@ -135,9 +135,19 @@ def main() -> None:
                 except APIClientError as exc:
                     st.error(str(exc))
         if st.session_state.dataset_id:
+            if st.button("New conversation", width="stretch"):
+                try:
+                    reset_conversation(st.session_state, api)
+                    st.rerun()
+                except APIClientError as exc:
+                    st.error(str(exc))
             if st.button("Clear dataset & history", width="stretch"):
-                clear_dataset(st.session_state)
-                st.rerun()
+                try:
+                    reset_conversation(st.session_state, api)
+                    clear_dataset(st.session_state)
+                    st.rerun()
+                except APIClientError as exc:
+                    st.error(str(exc))
         st.divider()
         if st.button("Check backend connection", width="stretch"):
             try:
@@ -145,12 +155,14 @@ def main() -> None:
                 st.success("Backend is ready.")
             except APIClientError as exc:
                 st.error(str(exc))
-        st.caption("Privacy: real AI analysis sends your question and relevant dataset-derived information to the configured LLM provider.")
+        st.caption("Privacy: real AI analysis sends your question, recent conversation context, and relevant dataset-derived information to the configured LLM provider.")
 
     st.title("Agentic AI Data Analyst")
     st.write("Explore your CSV, ask clear questions, and see the computed evidence behind every analysis.")
     if st.session_state.dataset_expired:
         st.warning("This dataset session has expired. Load the CSV again to continue. Previous results are retained for reference.")
+    if st.session_state.conversation_expired:
+        st.warning("This conversation has expired or is unavailable. Choose New conversation to continue with the current dataset.")
     info = st.session_state.dataset_info
     if info is None:
         st.info("Upload a CSV or try the retail sample to begin. Then inspect the data and ask a question.")
@@ -158,10 +170,10 @@ def main() -> None:
         render_overview(info)
     st.divider()
     st.subheader("Ask your data")
-    st.caption("Each question is analyzed independently. Chat history is displayed here, but contextual follow-up memory is not enabled yet.")
+    st.caption("Follow-ups use the latest five successful turns for this dataset. Each answer still requires fresh tool evidence. Start a new conversation to change topics.")
     if not st.session_state.history:
         st.caption('Try “What is the total revenue?” or “Show revenue by category.”')
-    ready = info is not None and not st.session_state.dataset_expired
+    ready = info is not None and not st.session_state.dataset_expired and not st.session_state.conversation_expired
     question = st.chat_input("Ask a question about this dataset…", disabled=not ready, max_chars=2000)
     if question and ready:
         with st.spinner("Analyzing the selected dataset…"):

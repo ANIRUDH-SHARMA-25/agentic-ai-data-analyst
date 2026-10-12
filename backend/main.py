@@ -1,4 +1,4 @@
-"""Phase 3 HTTP API. Start with: python -m uvicorn backend.main:app."""
+"""Phase 5 HTTP API. Start with: python -m uvicorn backend.main:app."""
 
 import tempfile
 from contextlib import asynccontextmanager
@@ -13,6 +13,7 @@ from starlette.concurrency import run_in_threadpool
 
 from backend.agent.analyst import AnalysisError, DataAnalysisAgent
 from backend.config import APISettings
+from backend.conversations import ConversationError, ConversationManager
 from backend.data.csv_processing import DatasetError, inspect_dataset, load_csv_bytes
 from backend.data.dataset_manager import (
     DatasetCapacityError, DatasetManager, DatasetNotFoundError,
@@ -26,6 +27,7 @@ from backend.upload_limits import UploadBodyLimit
 def create_app(
     settings: APISettings | None = None, *, manager: DatasetManager | None = None,
     analyzer: DataAnalysisAgent | None = None,
+    conversations: ConversationManager | None = None,
 ) -> FastAPI:
     settings = settings if settings is not None else APISettings.from_environment()
     manager = manager if manager is not None else DatasetManager(
@@ -33,6 +35,11 @@ def create_app(
     )
 
     analyzer = analyzer if analyzer is not None else DataAnalysisAgent()
+    conversations = conversations if conversations is not None else ConversationManager(
+        manager, ttl_seconds=settings.dataset_ttl_seconds,
+    )
+    if conversations.datasets is not manager:
+        raise ValueError("Conversations must use the active dataset manager.")
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
@@ -44,11 +51,13 @@ def create_app(
         try:
             yield
         finally:
+            conversations.clear()
             manager.clear()
             tempfile.tempdir = previous_directory
 
-    application = FastAPI(title="Agentic AI Data Analyst", version="0.3.0", lifespan=lifespan)
+    application = FastAPI(title="Agentic AI Data Analyst", version="0.5.0", lifespan=lifespan)
     application.state.dataset_manager = manager
+    application.state.conversation_manager = conversations
     application.state.settings = settings
     application.add_middleware(UploadBodyLimit, max_upload_bytes=settings.max_upload_bytes)
 
@@ -68,6 +77,7 @@ def create_app(
         summary = inspect_dataset(frame)
         # Inspection completes before consuming a session slot.
         dataset_id = manager.add(frame)
+        conversations.prune()
         return UploadResponse(
             dataset_id=dataset_id,
             **{key: summary[key] for key in ("row_count", "column_count", "columns", "dtypes", "preview")},
@@ -104,21 +114,38 @@ def create_app(
         try:
             frame = manager.get(dataset_id)
         except DatasetNotFoundError as exc:
+            conversations.prune()
             raise HTTPException(404, str(exc)) from exc
         return DatasetResponse(dataset_id=dataset_id, **inspect_dataset(frame))
 
     @application.post(
         "/analyze", response_model=AnalyzeResponse,
-        responses={code: {"model": ErrorResponse} for code in (404, 422, 429, 502, 503, 504)},
+        responses={code: {"model": ErrorResponse} for code in (404, 409, 410, 422, 429, 502, 503, 504)},
     )
     def analyze_dataset(request: AnalyzeRequest) -> AnalyzeResponse:
         try:
             frame = manager.get(request.dataset_id)
-            return analyzer.analyze(frame, request.question)
+            with conversations.turn(request.dataset_id, request.conversation_id) as lease:
+                result = analyzer.analyze(frame, request.question, prior_context=lease.context)
+                result = result.model_copy(update={"conversation_id": lease.conversation_id})
+                lease.complete(request.question, result)
+            return result
         except DatasetNotFoundError as exc:
+            conversations.prune()
             raise HTTPException(404, str(exc)) from exc
+        except ConversationError as exc:
+            raise HTTPException(exc.status_code, str(exc)) from exc
         except AnalysisError as exc:
             raise HTTPException(exc.status_code, str(exc)) from exc
+
+    @application.delete("/conversation/{conversation_id}", response_model=HealthResponse,
+                        responses={code: {"model": ErrorResponse} for code in (409, 410, 422)})
+    def reset_conversation(conversation_id: UUID, dataset_id: UUID) -> HealthResponse:
+        try:
+            conversations.reset(dataset_id, conversation_id)
+        except ConversationError as exc:
+            raise HTTPException(exc.status_code, str(exc)) from exc
+        return HealthResponse()
 
     return application
 

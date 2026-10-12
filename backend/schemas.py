@@ -3,7 +3,7 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, PrivateAttr, field_validator
 
 
 class HealthResponse(BaseModel):
@@ -34,6 +34,7 @@ class AnalyzeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     dataset_id: UUID
+    conversation_id: UUID | None = None
     question: str = Field(min_length=1, max_length=2000, strict=True)
 
     @field_validator("question")
@@ -50,6 +51,8 @@ class AnalyzeRequest(BaseModel):
 class AnalyzeResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    _statistics_evidence: dict = PrivateAttr(default_factory=dict)
+    conversation_id: UUID | None = None
     answer: str = Field(min_length=1, max_length=16000)
     sql: str | None = None
     columns: list[str]

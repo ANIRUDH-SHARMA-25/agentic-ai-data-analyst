@@ -10,5 +10,10 @@ chart rules, timeouts, and limits.
 - charts.py: deterministic Plotly recommendations
 - session.py: upload/session/history transitions
 
-The frontend imports no backend state or agent code. Questions are independent,
-and no paid request is retried automatically.
+The frontend imports no backend state or agent code. It sends the current
+conversation ID with follow-ups; the backend retains up to five compact
+successful turns. Displayed history stays bounded to 10 questions. New
+conversation clears backend context/history while retaining the dataset.
+Dataset switches clear both the old conversation and displayed results.
+Expired conversations require an explicit reset, and no paid request is
+retried automatically. No API key is needed for AppTest/mocked verification.

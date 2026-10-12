@@ -37,7 +37,9 @@ def test_mocked_upload_analyze_result_workflow(tmp_path):
         dataset_id = upload_sample(client)
         response = client.post("/analyze", json={"dataset_id": dataset_id, "question": "Which category generated the highest total revenue?"})
         assert response.status_code == 200
-        assert response.json() == {
+        result = response.json()
+        assert UUID(result.pop("conversation_id"))
+        assert result == {
             "answer": "Electronics generated the highest total revenue: 260.",
             "sql": TOP_SQL, "columns": ["category", "total"], "rows": [["Electronics", 260.0]],
             "row_count": 1, "tools_used": ["inspect_dataset", "execute_sql"],

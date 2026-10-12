@@ -13,9 +13,10 @@ from frontend.config import FrontendSettings
 class APIClientError(RuntimeError):
     """A user-readable error with an optional backend HTTP status."""
 
-    def __init__(self, message: str, status_code: int | None = None) -> None:
+    def __init__(self, message: str, status_code: int | None = None, *, kind: str | None = None) -> None:
         super().__init__(message)
         self.status_code = status_code
+        self.kind = kind
 
 
 def _invalid_response() -> APIClientError:
@@ -47,6 +48,8 @@ def _validate_dataset(data: dict[str, Any], *, inspected: bool) -> dict[str, Any
 
 def _validate_analysis(data: dict[str, Any]) -> dict[str, Any]:
     try:
+        if data.get("conversation_id") is not None:
+            UUID(data["conversation_id"])
         if (not isinstance(data["answer"], str) or not data["answer"].strip() or len(data["answer"]) > 16000
                 or (data["sql"] is not None and not isinstance(data["sql"], str))
                 or not isinstance(data["columns"], list) or len(data["columns"]) > 1000
@@ -58,7 +61,7 @@ def _validate_analysis(data: dict[str, Any]) -> dict[str, Any]:
                 or not isinstance(data["tools_used"], list) or len(data["tools_used"]) > 10
                 or not all(isinstance(name, str) for name in data["tools_used"])):
             raise _invalid_response()
-    except (KeyError, TypeError) as exc:
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
         raise _invalid_response() from exc
     return data
 
@@ -88,6 +91,8 @@ class APIClient:
             messages = {
                 400: "The CSV or request is invalid. Check the file contents and try again.",
                 404: "This dataset has expired or is no longer available. Upload the CSV again.",
+                409: "This conversation is busy or belongs to another dataset. Wait for the active analysis or start a new conversation.",
+                410: "This conversation has expired or was cleared. Start a new conversation; the dataset may still be available.",
                 413: "The upload exceeds the backend size limit. Choose a smaller CSV.",
                 415: "Only CSV files are supported.",
                 422: "This question or analysis is unsupported. Try a simpler question using the dataset's columns.",
@@ -100,7 +105,11 @@ class APIClient:
                 message = "AI analysis is not configured. Set OPENAI_API_KEY in the backend terminal; upload and inspection still work."
             else:
                 message = messages.get(response.status_code, "The backend could not complete the request.")
-            raise APIClientError(message, response.status_code)
+            kind = None
+            if response.status_code == 409 and isinstance(detail, str) and detail.startswith("Conversation belongs to a different dataset"):
+                kind = "conversation_mismatch"
+                message = "This conversation belongs to another dataset. Start a new conversation for the selected dataset."
+            raise APIClientError(message, response.status_code, kind=kind)
         if len(response.content) > 2 * 1024 * 1024:
             raise APIClientError("The backend response is too large for this frontend. Use a smaller dataset or result.")
         try:
@@ -142,10 +151,28 @@ class APIClient:
             raise _invalid_response()
         return result
 
-    def analyze(self, dataset_id: str, question: str) -> dict[str, Any]:
+    def analyze(self, dataset_id: str, question: str, conversation_id: str | None = None) -> dict[str, Any]:
         dataset_id = self._dataset_id(dataset_id)
         question = question.strip()
         if not question or len(question) > 2000 or not any(character.isalnum() for character in question):
             raise APIClientError("Enter a meaningful question of at most 2,000 characters.")
-        return _validate_analysis(self._request("POST", "/analyze", analysis=True,
-                                              json={"dataset_id": dataset_id, "question": question}))
+        body = {"dataset_id": dataset_id, "question": question}
+        if conversation_id is not None:
+            try:
+                body["conversation_id"] = str(UUID(conversation_id))
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise APIClientError("The conversation session is invalid. Start a new conversation.", 410) from exc
+        result = _validate_analysis(self._request("POST", "/analyze", analysis=True, json=body))
+        if conversation_id is not None and result.get("conversation_id") != body["conversation_id"]:
+            raise _invalid_response()
+        return result
+
+    def reset_conversation(self, dataset_id: str, conversation_id: str) -> None:
+        try:
+            conversation_id = str(UUID(conversation_id))
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise APIClientError("The conversation session is invalid. Start a new conversation.", 410) from exc
+        data = self._request("DELETE", f"/conversation/{conversation_id}",
+                             params={"dataset_id": self._dataset_id(dataset_id)})
+        if data.get("status") != "ok":
+            raise _invalid_response()

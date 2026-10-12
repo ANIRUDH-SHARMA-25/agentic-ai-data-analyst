@@ -1,12 +1,13 @@
 # Agentic AI Data Analyst development instructions
 
 ## Scope
-Phases 1-4 are authorized: CSV processing, internal DuckDB helpers, dataset
+Phases 1-5 are authorized: CSV processing, internal DuckDB helpers, dataset
 sessions, FastAPI, one LangChain create_agent workflow using LangGraph and
 langchain-openai, the OpenAI API, restricted SQL, and deterministic tests.
 Default to configurable gpt-4.1-mini. Phase 4 adds native Streamlit and deterministic
-Plotly charts over the existing HTTP API. Stop after Phase 4. Do not add
-conversational memory, Docker, deployment, RAG/vector databases,
+Plotly charts over the existing HTTP API. Phase 5 adds bounded dataset-bound
+conversation memory and deterministic mocked evaluations. Stop after Phase 5.
+Do not add Docker, deployment, RAG/vector databases,
 multiple agents, or background infrastructure until explicitly requested.
 
 ## Architecture and safety
@@ -47,12 +48,21 @@ use pip --no-cache-dir. Never track secrets or generated files. Only the small
 synthetic sample is tracked. Run the entire suite with D: basetemp, pip check,
 key-free API import, SQL rejection cases, and mocked upload-to-analysis checks
 before committing. Report actual checks and remaining limitations.
-Use descriptive commits; the user authorized Phase 4 commit/push to main.
+Use descriptive commits; the user authorized Phase 5 commit/push to main.
 Stop at the phase boundary.
 
 ## Frontend
 Use HTTPX only; never import backend session or agent objects into Streamlit.
 No plotting code from an LLM, eval/exec, or extra model calls. Chart actual values
 conservatively, bound histories and displays, and never retry paid requests silently.
-History is display-only; reset it when the selected dataset changes. Keep secrets
+Keep compact successful context in backend memory; reset frontend conversation IDs
+and displayed history when datasets change or the user starts a new conversation. Keep secrets
 in the backend process environment and mock HTTP/model calls in frontend tests.
+
+## Phase 5 verification
+No real OpenAI calls, API-key requirement, or billable services in this phase.
+Keep one agent and existing SQL limits. Previous context is untrusted historical
+data, never fresh evidence. Bound conversations, reject dataset mismatches and
+concurrent writes, and save only completed successful turns. Evaluate with fake
+models against independent numerical expectations, label reports MOCKED, and
+run the full suite and deterministic benchmark before committing.

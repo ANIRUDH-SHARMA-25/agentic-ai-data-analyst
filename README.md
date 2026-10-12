@@ -2,7 +2,7 @@
 
 A resume-focused AI/ML project that will let users upload CSV data, ask
 natural-language questions, and receive computed analysis, charts, and
-AI-generated explanations. **Phases 1-4 implement the data layer, HTTP API, agentic SQL analysis, and Streamlit dashboard.**
+AI-generated explanations. **Phases 1-5 implement data processing, the HTTP API, one analytical agent, the Streamlit dashboard, bounded conversation memory, and mocked evaluations.**
 
 ## Current capabilities
 
@@ -21,6 +21,7 @@ AI-generated explanations. **Phases 1-4 implement the data layer, HTTP API, agen
 
 ```text
 backend/main.py               FastAPI application and app factory
+backend/conversations.py      bounded dataset-bound conversation manager
 backend/config.py             validated API configuration
 backend/schemas.py            typed response schemas
 backend/upload_limits.py      bounded upload request handling
@@ -28,7 +29,7 @@ backend/data/                 CSV processing, DuckDB, sessions, restricted SQL
 backend/agent/                lazy OpenAI model config and one LangChain agent
 frontend/                     Streamlit dashboard, HTTP client, chart rules
 data/sample/                 small tracked synthetic dataset
-evaluations/                 reserved for agent evaluation
+evaluations/                 deterministic benchmark and network-free model
 examples/                     runnable Phase 1 demonstration
 tests/                        data layer, sessions, and API tests
 ```
@@ -69,7 +70,8 @@ inside the repository and removes temporary upload files when requests finish.
 | `GET /health` | Return `{"status":"ok"}` | 200 |
 | `POST /upload` | Multipart field `file` containing a CSV | 201 |
 | `GET /dataset/{dataset_id}` | Inspect a previously uploaded dataset | 200 |
-| `POST /analyze` | Analyze a selected dataset with the agent | 200 |
+| `POST /analyze` | Analyze a selected dataset; optionally continue a conversation | 200 |
+| `DELETE /conversation/{conversation_id}?dataset_id=UUID` | Clear conversation context for the selected dataset | 200 |
 
 Upload returns `dataset_id`, `row_count`, `column_count`, `columns`, `dtypes`,
 and up to five preview rows. Inspection additionally returns `missing_values`
@@ -118,6 +120,8 @@ Errors consistently use `{"detail":"Human-readable message"}`.
 | 415 | Filename does not have a `.csv` extension |
 | 422 | Invalid request or unsupported/rejected analysis |
 | 404 | Dataset is unknown or expired |
+| 409 | Conversation is busy or belongs to a different dataset |
+| 410 | Conversation is unknown, expired, or cleared |
 | 503 | Dataset capacity reached or OpenAI configuration/access unavailable |
 | 429 | OpenAI rate limit reached |
 | 502 | Provider/model failed to produce a complete grounded answer |
@@ -219,7 +223,8 @@ and disable hosted tracing; no real key, API calls, or billed tokens are used.
 
 Each analysis request gets a fresh LangChain `create_agent` graph (LangGraph
 underneath), one configured ChatOpenAI model, and three closures bound to that
-request's dataset snapshot. There is no persisted conversation/checkpointer,
+request's dataset snapshot. Phase 5 supplies compact backend-managed context;
+there is no durable conversation storage or LangGraph checkpointer,
 multi-agent graph, web access, shell tool, filesystem tool, or Python execution.
 The system prompt requires schema inspection and actual evidence, tells the
 model to explain unsupported questions, and treats dataset contents as untrusted.
@@ -286,6 +291,7 @@ example executes this SQL and explains its actual result:
 
 ```json
 {
+  "conversation_id": "ed34b274-3e8d-4b29-9df3-1096d739cd56",
   "answer": "Electronics generated the highest total revenue: 260.",
   "sql": "SELECT category, SUM(revenue) AS total FROM dataset GROUP BY category ORDER BY total DESC LIMIT 1",
   "columns": ["category", "total"],
@@ -377,8 +383,8 @@ and [SQLGlot](https://sqlglot.com/sqlglot.html).
 
 ## Planned phases
 
-Later phases may add conversational follow-ups, agent evaluation, Docker,
-and deployment. Stop after Phase 4; those components are not implemented here.
+Later phases may add real-model quality testing, Docker, and deployment.
+Stop after Phase 5; those components are not implemented here.
 
 ## Phase 4: Streamlit dashboard
 
@@ -403,9 +409,10 @@ not automatic .env loading. Stop either server with Ctrl+C.
 The sidebar supports connection checking, refreshing inspection, and clearing
 the selected dataset/history. The overview shows rows, columns, missing cells,
 preview, types, and statistics. Chat responses show the explanation, result table,
-and expandable executed SQL/tool names. Each question is independent: visible
-history is not conversational model memory. Only the latest 10 questions remain.
-Changing datasets clears old results before uploading; failed inspection can be
+and expandable executed SQL/tool names. Follow-ups use the latest five successful
+turns for the selected dataset; the interface displays at most 10 questions.
+New conversation clears backend context and displayed chat while retaining the
+dataset. Changing datasets clears the old conversation and results before uploading; failed inspection can be
 retried explicitly without duplicating the upload. Streamlit reruns alone perform
 no HTTP requests. Session state retains metadata and bounded responses, not an
 extra full DataFrame or raw CSV copy; Streamlit's uploader retains its input file
@@ -436,7 +443,7 @@ Streamlit's server upload cap is also 5 MiB; override --server.maxUploadSize wit
 the desired whole-MiB cap if increasing the configured byte limit. Backend
 validation remains authoritative.
 
-The privacy notice states that real analysis sends the question and relevant
+The privacy notice states that real analysis sends the question, recent conversation context, and relevant
 dataset-derived information to the configured LLM provider. This remains a
 local, single-user portfolio application, with the Phase 3 security limitations.
 
@@ -449,3 +456,113 @@ All tests forbid live OpenAI generation. Run the complete suite:
 .\.venv\Scripts\python.exe -m pytest -q --basetemp=.tmp/pytest
 .\.venv\Scripts\python.exe -m pip check
 ```
+
+## Phase 5: basic conversational memory
+
+POST /analyze still accepts the old dataset_id/question request. Omitting
+conversation_id (or sending null) starts a fresh conversation; every successful
+HTTP response additionally returns conversation_id. Send it with the same
+dataset_id for subsequent questions:
+
+```json
+{
+  "dataset_id": "VALID_DATASET_UUID",
+  "conversation_id": "UUID_FROM_PREVIOUS_SUCCESSFUL_RESPONSE",
+  "question": "Which category was second?"
+}
+```
+
+The dataset_id remains authoritative. Conversations cannot select another
+session or supply tool arguments. Invalid UUIDs return 422; unknown/expired
+conversation IDs return 410; a different dataset or simultaneous request to
+the same conversation returns 409. Expired datasets return 404. No model call
+is made for a rejected ID, capacity check, or busy conversation.
+
+ConversationManager retains at most 100 conversations, each with the latest
+five completed successful turns. Each turn is capped at 4 KiB of UTF-8 JSON
+(about 20 KiB of retained evidence per conversation, plus container overhead).
+Evidence includes the prior question, executed SQL, at most 20 columns/five
+result rows, original row count, tool names, and bounded verified statistics.
+Oversized evidence is omitted with an evidence_truncated flag; if necessary
+the question is shortened. No complete dataset, full tool-message transcript,
+or unverified model prose is retained as historical numerical evidence.
+Statistics are attached privately during analysis, not added to the public API.
+
+Each request creates the same single LangChain agent with fresh request-local
+tools. Historical JSON is passed as a HumanMessage explicitly marked untrusted,
+followed by the current HumanMessage. It is not promoted to system instructions
+or replayed as old tool calls. Context assists reference resolution; schema
+inspection is still enforced on every turn. A follow-up must additionally call
+get_statistics or execute_sql for fresh evidence. Unsupported or ambiguous
+follow-ups can inspect statistics and ask for clarification; previous results
+cannot replace current tools. The original SQL allowlist, one correction,
+model/tool limits, timeouts, sanitized errors, and disabled hosted tracing remain.
+Model explanations can still be wrong; review SQL and results.
+
+Memory is single-process and temporary. Inactivity expiry defaults to the same
+DATASET_TTL_SECONDS as datasets (30 minutes). Cleanup is lazy on conversation
+operations and failed dataset lookups/new uploads. Reading conversation context
+does not extend dataset TTL. Successful analyses refresh conversation inactivity;
+failed/partial/rejected analyses do not append evidence or refresh it. Dataset
+expiry invalidates associated conversations. An analysis finishing after its
+dataset expires returns 404 and is not retained. Busy conversations are protected
+from inactivity pruning while the request runs, but not from dataset expiry.
+Overlapping requests/reset on the same conversation return 409 immediately;
+independent conversations can run concurrently. A bounded slot is reserved for
+new requests and released if analysis fails.
+
+Backend shutdown/restart discards datasets and conversations. UUIDs are session
+selectors, not authentication. Keep one worker and localhost binding. There is
+no persistent database, cross-worker memory, cancellation protocol, or background
+cleanup service. A client timeout does not cancel backend work and may leave a
+success the client did not receive; no paid request is retried automatically.
+
+In Streamlit, only the conversation ID is sent with the next question; the
+frontend never sends its entire chat transcript. New conversation explicitly
+clears backend memory and displayed history. Dataset switches do the same.
+Expired conversations preserve displayed results for reference, disable new
+questions, and prompt an explicit reset while keeping the active dataset.
+A dataset mismatch discards the unusable ID so a new conversation can recover;
+busy/reset failures preserve current state. Network failures leave history and
+context IDs intact without repeating an analysis.
+
+## Deterministic evaluation (MOCKED)
+
+No API key or real provider calls are required for Phase 5 verification.
+The benchmark uses a network-free scripted chat model, the actual LangChain
+agent, real restricted DuckDB execution, and multi-turn FastAPI requests.
+Expected numerical tables are computed independently with Pandas; explanations
+are not used as expected answers. Ties have explicit deterministic sorting.
+
+```powershell
+Set-Location 'D:\GPT work\CODEX\agentic-ai-data-analyst'
+$env:TEMP = Join-Path $PWD '.tmp'
+$env:TMP = $env:TEMP
+.\.venv\Scripts\python.exe -m evaluations.benchmark
+# Optional generated report stays ignored on D:
+.\.venv\Scripts\python.exe -m evaluations.benchmark --output .tmp/phase5-evaluation.json
+.\.venv\Scripts\python.exe -m pytest -q --basetemp=.tmp/pytest
+.\.venv\Scripts\python.exe -m pip check
+```
+
+The 28 cases cover 18 numerical SQL tasks, three follow-ups, four rejected SQL
+attempts (unknown column, DDL, file reader, join), two isolation/ID checks, and
+one unsupported question. The three follow-ups use previous verified evidence
+to choose the next rank/filter, then execute fresh SQL. The seed question is
+setup, not an extra scored case. Reports include total task success, SQL
+correctness, follow-up context correctness, rejection behavior, per-case outcomes,
+and measured duration; the command exits nonzero if a case fails. Output is
+labeled MOCKED / DETERMINISTIC, never OpenAI model accuracy. Report files are
+restricted to the repo's ignored .tmp or artifacts directories.
+
+These checks demonstrate conversation/data isolation, API/message integration,
+SQL execution and bounds, not real natural-language interpretation, robustness
+against all prompt injections, or OpenAI explanation accuracy. Scripted models
+have predetermined actions; changing a scripted SQL query to a wrong computation
+fails against the independent oracle. Real-model quality is unverified and is
+reserved for a later authorized phase. Normal configured live analysis remains
+available from earlier phases, but no live calls are part of Phase 5 work.
+
+See evaluations/README.md for the case inventory and result interpretation.
+Stop after Phase 5: no Docker, deployment, key onboarding, live-model benchmark,
+or additional agents are implemented.
