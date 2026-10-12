@@ -46,6 +46,20 @@ def load_csv(path: str | Path, *, max_bytes: int = DEFAULT_MAX_BYTES) -> pd.Data
             payload = handle.read(max_bytes + 1)
     except OSError as exc:
         raise DatasetError(f"Could not read CSV file: {exc}") from exc
+    return load_csv_bytes(payload, filename=source.name, max_bytes=max_bytes)
+
+
+def load_csv_bytes(
+    payload: bytes, *, filename: str, max_bytes: int = DEFAULT_MAX_BYTES,
+) -> pd.DataFrame:
+    """Validate uploaded CSV bytes using the same parser as local files.
+
+    The filename is used only for format validation, never as a storage path.
+    """
+    if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
+        raise DatasetError("max_bytes must be a positive integer.")
+    if Path(filename).suffix.lower() != ".csv":
+        raise DatasetError("Only .csv files are supported.")
     if len(payload) > max_bytes:
         raise DatasetError(f"CSV exceeds the {max_bytes}-byte size limit.")
     try:

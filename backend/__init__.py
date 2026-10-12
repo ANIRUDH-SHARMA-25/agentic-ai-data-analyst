@@ -1,1 +1,1 @@
-"""Backend package; API endpoints are planned for a later phase."""
+"""Reusable data layer and Phase 2 FastAPI backend."""
