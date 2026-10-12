@@ -208,8 +208,8 @@ def test_shutdown_discards_sessions(settings):
 
 def test_openapi_and_scope(client):
     schema = client.get("/openapi.json").json()
-    assert set(schema["paths"]) == {"/health", "/upload", "/dataset/{dataset_id}"}
+    assert set(schema["paths"]) == {"/health", "/upload", "/dataset/{dataset_id}", "/analyze"}
     assert "multipart/form-data" in schema["paths"]["/upload"]["post"]["requestBody"]["content"]
     assert "DatasetResponse" in schema["components"]["schemas"]
     assert client.get("/docs").status_code == 200
-    assert client.post("/analyze").status_code == 404
+    assert client.post("/analyze").status_code == 422
