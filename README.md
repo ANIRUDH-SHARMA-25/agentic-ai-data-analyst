@@ -670,11 +670,20 @@ CI, missing-key messages, privacy text, and provider tests are updated. The
 SDK route/retry/timeout configuration is checked without generation. The
 28-case benchmark remains MOCKED / DETERMINISTIC, not Gemini accuracy.
 Official free-tier availability is documented; account-specific access/billing
-requires the user's AI Studio check. Secure key setup and live approval completed. Two generation attempts were
-made: the initial 30-second request timed out (504), and the approved 60-second
-rerun was rejected by the provider (502). Both runs stopped at their first
-request; no live task completed. A separate model-metadata lookup succeeded,
-confirming key/model access, not generation success or free quota. The user
-confirmed Free tier with billing disabled; billing was not queried by the app.
-See [the live status](evaluations/phase7-live-status.md). No Docker/WSL installation or public deployment
-is part of Phase 7.
+requires the user's AI Studio check. Three separately approved generation
+attempts have failed: backend 504 at 30 seconds, backend 502 with a 60-second
+timeout (upstream code not retained), and a plain-text request without tools
+that directly confirmed Google HTTP **503 UNAVAILABLE**. The latest diagnosis
+is a provider service-availability failure; it does not prove the upstream cause
+of the earlier backend 502. No live numerical task completed. A historical
+metadata lookup succeeded, proving visibility, not generation success or quota.
+
+The user confirmed Free tier with billing disabled and has paused all generation
+and metadata requests pending fresh explicit approval. Gemini 3.8 Flash remains
+configured. Gemini 3.7 Flash is a conditional future research candidate only;
+its availability/free-tier eligibility is unverified and no switch is approved.
+Offline tests and the mocked benchmark remain available. See
+[the live status](evaluations/phase7-live-status.md) and
+[the investigation](evaluations/phase7-offline-investigation.md).
+No billing changes, paid fallback, Docker/WSL installation, Phase 8, or public
+deployment are authorized.

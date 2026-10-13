@@ -70,20 +70,29 @@ attempts across four questions (four per question, including final explanation).
 Do not run the 28-case mocked benchmark against a live model.
 
 Record results separately in `.tmp/gemini-live-evaluation.json`, marked REAL
-GEMINI, with attempted request count, SQL, tools, actual tables, comparison
-outcomes, chart decisions, and sanitized failures. Generated IDs/timings differ.
+GEMINI, with attempt counts, case indices, comparison outcomes, tool/row
+summaries, chart decisions, and allowlisted provider diagnostics. Do not save
+prompts, full responses, or raw exceptions in diagnostic reports.
 Explanation grounding and rendering deserve human review; correct numerical
 tables alone do not prove explanation quality. Key setup and explicit approval were completed. The initial and approved
 second run failed on their first generation request (504 timeout, then 502
-provider rejection). No live numerical task completed and no successful result
-was fabricated. See [the recorded live status](phase7-live-status.md).
+provider error; upstream status was not retained). A subsequent separately
+approved plain-text diagnostic without tools returned actual Google HTTP
+503 UNAVAILABLE. It stopped after exactly one attempt with no retries. No live
+numerical task completed. All further generation and metadata requests are
+on hold until fresh explicit approval. Gemini 3.8 Flash remains configured;
+Gemini 3.7 Flash is only a conditional future research candidate, with no
+verified free-tier eligibility or approved switch. See
+[the recorded live status](phase7-live-status.md).
 
 In the dashboard inspect each successful answer, its SQL/table, and the category
 Plotly bar chart; compare its labels/values to 260/150/120. Confirm the follow-up
 uses the same conversation. Clear/re-upload after server restart. Free-tier
 content may be used by Google for product improvement, so synthetic data only.
 
-After explicit human approval, run in a local PowerShell window:
+The following evaluation command is reference material only; the current hold
+prohibits running it. After fresh explicit approval for a bounded evaluation,
+run in a local PowerShell window:
 
 ```powershell
 Set-Location 'D:\GPT work\CODEX\agentic-ai-data-analyst'

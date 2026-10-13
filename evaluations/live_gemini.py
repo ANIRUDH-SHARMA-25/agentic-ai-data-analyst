@@ -39,6 +39,20 @@ class RequestBudget(BaseCallbackHandler):
         print(f"REAL GEMINI generation attempt {self.attempts}/{self.maximum}", flush=True)
 
 
+class DiagnosticAgent(DataAnalysisAgent):
+    """Retain only safe provider fields locally; keep the HTTP contract unchanged."""
+
+    last_provider_diagnostic = None
+
+    def analyze(self, *args, **kwargs):
+        self.last_provider_diagnostic = None
+        try:
+            return super().analyze(*args, **kwargs)
+        except AnalysisError as exc:
+            self.last_provider_diagnostic = exc.provider_diagnostic
+            raise
+
+
 def expected_tables(frame):
     grouped = frame.groupby("category")["revenue"].sum().sort_values(ascending=False)
     pairs = [[name, float(value)] for name, value in grouped.items()]
@@ -69,7 +83,7 @@ def run_live(*, approved=False, max_calls=16, interval=35):
         model_timeout_seconds=settings.model_timeout_seconds,
         max_output_tokens=settings.max_output_tokens, max_model_calls=4, max_tool_calls=3,
     )
-    agent = DataAnalysisAgent(settings=bounded_settings, model_factory=lambda _: model)
+    agent = DiagnosticAgent(settings=bounded_settings, model_factory=lambda _: model)
     path = ROOT / "data/sample/retail_sales.csv"
     frame = pd.read_csv(path)
     expected = expected_tables(frame)
@@ -92,10 +106,10 @@ def run_live(*, approved=False, max_calls=16, interval=35):
         dataset_id = upload.json()["dataset_id"]
         for index, question in enumerate(questions):
             response = client.post("/analyze",json={"dataset_id":dataset_id,"question":question,"conversation_id":conversation_id})
-            item = {"question":question,"http_status":response.status_code,"expected":expected[index],"passed":False}
+            item = {"case_index":index + 1,"http_status":response.status_code,"expected":expected[index],"passed":False}
             if response.status_code == 200:
                 data = response.json()
-                item["result"] = data
+                item["result_summary"] = {"tools_used": data["tools_used"], "row_count": data["row_count"]}
                 chart = build_chart(data["columns"],data["rows"])
                 item["chart_type"] = chart.kind
                 item["passed"] = (table_matches(index,data["rows"],expected[index])
@@ -110,6 +124,7 @@ def run_live(*, approved=False, max_calls=16, interval=35):
             else:
                 # The API returns sanitized errors, not raw SDK errors or keys.
                 item["error"] = response.json().get("detail","Analysis failed.")
+                item["provider_diagnostic"] = agent.last_provider_diagnostic
             report["cases"].append(item)
             report["generation_attempts"] = budget.attempts
             output.write_text(json.dumps(report,indent=2,ensure_ascii=False,allow_nan=False),encoding="utf-8")
