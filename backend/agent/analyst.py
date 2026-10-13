@@ -1,6 +1,7 @@
 """One LangChain/LangGraph agent, three tools, and request-local evidence."""
 
 import json
+import os
 from typing import Callable
 
 import pandas as pd
@@ -10,10 +11,16 @@ from langchain.agents.middleware.model_call_limit import ModelCallLimitExceededE
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI
+import httpx
+from google.genai.errors import APIError
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
+from langchain_core.exceptions import (
+    ModelTimeoutError, ModelRateLimitError, ModelAuthenticationError,
+    ModelPermissionDeniedError, ModelNotFoundError,
+)
 from langgraph.errors import GraphRecursionError
 from langsmith import tracing_context
-from openai import APIError, APITimeoutError, AuthenticationError, PermissionDeniedError, RateLimitError
 
 from backend.agent.config import AgentSettings
 from backend.data.csv_processing import inspect_dataset
@@ -54,14 +61,25 @@ class AnalysisError(RuntimeError):
         self.status_code = status_code
 
 
-def create_openai_model(settings: AgentSettings) -> BaseChatModel:
+def create_gemini_model(settings: AgentSettings) -> BaseChatModel:
     if not settings.api_key:
-        raise AnalysisError("OPENAI_API_KEY is not configured. Set it in the process environment.", 503)
-    return ChatOpenAI(
-        model=settings.model, api_key=settings.api_key, temperature=0,
-        timeout=settings.model_timeout_seconds, max_tokens=settings.max_output_tokens,
-        max_retries=0, base_url="https://api.openai.com/v1",
+        raise AnalysisError("GOOGLE_API_KEY is not configured. Set it in the process environment.", 503)
+    if not settings.free_tier_confirmed:
+        raise AnalysisError("Confirm the AI Studio project is Free with billing disabled, then set GOOGLE_FREE_TIER_CONFIRMED=true.", 503)
+    # The adapter does not forward vertexai=False to the SDK's Client constructor.
+    # Fail closed on inherited SDK routing flags before constructing that client.
+    for flag in ("GOOGLE_GENAI_USE_VERTEXAI", "GOOGLE_GENAI_USE_ENTERPRISE"):
+        if os.environ.get(flag, "").lower() not in {"", "false", "0"}:
+            raise AnalysisError("Paid Google routing flags are not permitted. Unset Vertex AI/Enterprise configuration.", 503)
+    model = ChatGoogleGenerativeAI(
+        model=settings.model, google_api_key=settings.api_key, temperature=1.0,
+        timeout=settings.model_timeout_seconds, max_output_tokens=settings.max_output_tokens,
+        max_retries=0, vertexai=False, base_url="https://generativelanguage.googleapis.com",
+        include_thoughts=False, reasoning_effort="low", response_modalities=["TEXT"],
     )
+    if getattr(model.client, "vertexai", False) or getattr(model.client, "enterprise", False):
+        raise AnalysisError("Only the Gemini Developer API is permitted; no request was sent.", 503)
+    return model
 
 
 def bounded_metadata(value: dict) -> dict:
@@ -75,7 +93,7 @@ class DataAnalysisAgent:
 
     def __init__(
         self, *, settings: AgentSettings | None = None,
-        model_factory: Callable[[AgentSettings], BaseChatModel] = create_openai_model,
+        model_factory: Callable[[AgentSettings], BaseChatModel] = create_gemini_model,
         sql_limits: SQLLimits | None = None,
     ) -> None:
         self.settings = settings
@@ -86,7 +104,7 @@ class DataAnalysisAgent:
         try:
             settings = self.settings if self.settings is not None else AgentSettings.from_environment()
         except ValueError as exc:
-            raise AnalysisError("OpenAI model configuration is invalid.", 503) from exc
+            raise AnalysisError("Gemini model configuration is invalid.", 503) from exc
         summary = inspect_dataset(frame)
         schema = bounded_metadata({key: summary[key] for key in ("columns", "dtypes", "row_count", "column_count")})
         context = prior_context or []
@@ -177,9 +195,25 @@ class DataAnalysisAgent:
                     config={"recursion_limit": 2 * settings.max_model_calls + 4},
                 )
             final = result["messages"][-1]
-            if not isinstance(final, AIMessage) or final.tool_calls or not isinstance(final.content, str):
+            if not isinstance(final, AIMessage) or final.tool_calls:
                 raise AnalysisError("The model did not return a complete textual answer.")
-            answer = final.content.strip()
+            content = final.content
+            if isinstance(content, list):
+                pieces = []
+                for block in content:
+                    if isinstance(block, str):
+                        pieces.append(block)
+                    elif isinstance(block, dict) and block.get("type") in {"reasoning", "thinking"}:
+                        continue
+                    elif isinstance(block, dict) and block.get("type") == "text" and isinstance(block.get("text"), str):
+                        if not block.get("thought", False):
+                            pieces.append(block["text"])
+                    else:
+                        raise AnalysisError("The model returned unsupported answer content.")
+                content = "\n".join(pieces)
+            if not isinstance(content, str):
+                raise AnalysisError("The model did not return a complete textual answer.")
+            answer = content.strip()
             if not answer or len(answer) > 16000 or not inspected:
                 raise AnalysisError("The model did not return a bounded answer with dataset evidence.")
             if context and not any(name in executed for name in ("execute_sql", "get_statistics")):
@@ -194,13 +228,20 @@ class DataAnalysisAgent:
             raise
         except (ModelCallLimitExceededError, GraphRecursionError) as exc:
             raise AnalysisError("Analysis reached its model/iteration limit.", 422) from exc
-        except APITimeoutError as exc:
-            raise AnalysisError("The OpenAI provider timed out. Try again later.", 504) from exc
-        except RateLimitError as exc:
-            raise AnalysisError("The OpenAI provider rate limit was reached. Try again later.", 429) from exc
-        except (AuthenticationError, PermissionDeniedError) as exc:
-            raise AnalysisError("OpenAI credentials or model access are not permitted. Check configuration.", 503) from exc
-        except APIError as exc:
-            raise AnalysisError("The OpenAI provider is unavailable or rejected the request.", 502) from exc
+        except (ModelTimeoutError, httpx.TimeoutException, TimeoutError) as exc:
+            raise AnalysisError("The Gemini provider timed out. Try again later.", 504) from exc
+        except ModelRateLimitError as exc:
+            raise AnalysisError("Gemini free-tier quota was reached. Wait for the quota reset; no retry or paid fallback was used.", 429) from exc
+        except (ModelAuthenticationError, ModelPermissionDeniedError, ModelNotFoundError) as exc:
+            raise AnalysisError("Gemini credentials or free model access are unavailable. Check AI Studio; do not enable billing.", 503) from exc
+        except (APIError, ChatGoogleGenerativeAIError) as exc:
+            code = getattr(exc, "code", None) or getattr(exc.__cause__, "code", None)
+            if code == 429:
+                raise AnalysisError("Gemini free-tier quota was reached. Wait for the quota reset; no retry or paid fallback was used.", 429) from exc
+            if code in {401, 403, 404}:
+                raise AnalysisError("Gemini credentials or free model access are unavailable. Check AI Studio; do not enable billing.", 503) from exc
+            if code in {408, 504}:
+                raise AnalysisError("The Gemini provider timed out. Try again later.", 504) from exc
+            raise AnalysisError("The Gemini provider is unavailable or rejected the request.", 502) from exc
         except Exception as exc:
             raise AnalysisError("Analysis could not be completed. Try a simpler supported question.", 502) from exc

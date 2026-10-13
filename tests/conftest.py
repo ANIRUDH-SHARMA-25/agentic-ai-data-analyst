@@ -12,11 +12,13 @@ def retail_frame():
 
 
 @pytest.fixture(autouse=True)
-def forbid_live_openai(monkeypatch):
+def forbid_live_gemini(monkeypatch):
     """Accidental real provider invocations fail before any network request."""
-    from langchain_openai import ChatOpenAI
+    from langchain_google_genai import ChatGoogleGenerativeAI
 
-    for name in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_TIMEOUT_SECONDS", "OPENAI_MAX_OUTPUT_TOKENS"):
+    for name in ("GOOGLE_API_KEY", "GOOGLE_MODEL", "GOOGLE_TIMEOUT_SECONDS", "GOOGLE_MAX_OUTPUT_TOKENS"):
+        monkeypatch.delenv(name, raising=False)
+    for name in ("GEMINI_API_KEY", "GOOGLE_FREE_TIER_CONFIRMED", "OPENAI_API_KEY", "GOOGLE_GENAI_USE_VERTEXAI", "GOOGLE_GENAI_USE_ENTERPRISE", "GOOGLE_CLOUD_PROJECT"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
     monkeypatch.delenv("LANGCHAIN_API_KEY", raising=False)
@@ -24,10 +26,10 @@ def forbid_live_openai(monkeypatch):
     monkeypatch.setenv("LANGCHAIN_TRACING_V2", "false")
 
     def forbidden(*args, **kwargs):
-        raise AssertionError("Live OpenAI calls are forbidden in automated tests.")
+        raise AssertionError("Live Gemini calls are forbidden in automated tests.")
 
     async def async_forbidden(*args, **kwargs):
-        raise AssertionError("Live OpenAI calls are forbidden in automated tests.")
+        raise AssertionError("Live Gemini calls are forbidden in automated tests.")
 
-    monkeypatch.setattr(ChatOpenAI, "_generate", forbidden)
-    monkeypatch.setattr(ChatOpenAI, "_agenerate", async_forbidden)
+    monkeypatch.setattr(ChatGoogleGenerativeAI, "_generate", forbidden)
+    monkeypatch.setattr(ChatGoogleGenerativeAI, "_agenerate", async_forbidden)

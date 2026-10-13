@@ -80,7 +80,7 @@ def test_missing_key_preserves_other_apis(tmp_path):
         assert client.get(f"/dataset/{dataset_id}").status_code == 200
         response = client.post("/analyze", json={"dataset_id": dataset_id, "question": "Total revenue?"})
         assert response.status_code == 503
-        assert "OPENAI_API_KEY" in response.json()["detail"]
+        assert "GOOGLE_API_KEY" in response.json()["detail"]
         assert "answer" not in response.json()
 
 
@@ -159,7 +159,7 @@ def test_sql_timeout_http_error(tmp_path, monkeypatch):
 
 
 def test_invalid_provider_configuration_is_lazy(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENAI_TIMEOUT_SECONDS", "not-a-number")
+    monkeypatch.setenv("GOOGLE_TIMEOUT_SECONDS", "not-a-number")
     with TestClient(create_app(settings(tmp_path))) as client:
         assert client.get("/health").status_code == 200
         response = client.post("/analyze", json={"dataset_id": upload_sample(client), "question": "Total?"})

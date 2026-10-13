@@ -66,8 +66,8 @@ def test_transport_errors_no_retry(exception,word):
 
 
 def test_missing_key_and_optional_sql():
-    with pytest.raises(APIClientError,match='Set OPENAI_API_KEY'):
-        client(lambda req:httpx.Response(503,json={'detail':'OPENAI_API_KEY is required'})).analyze(ID,'Revenue?')
+    with pytest.raises(APIClientError,match='Set GOOGLE_API_KEY'):
+        client(lambda req:httpx.Response(503,json={'detail':'GOOGLE_API_KEY is required'})).analyze(ID,'Revenue?')
     result={**RESULT,'sql':None,'columns':[],'rows':[],'row_count':0}
     assert client(lambda req:httpx.Response(200,json=result)).analyze(ID,'Statistics?')==result
 
@@ -204,7 +204,7 @@ def test_app_empty_upload_analysis_rerun_and_clear(app):
     assert at.chat_input[0].disabled and not at.chat_message
 
 
-@pytest.mark.parametrize('status,message',[(503,'Set OPENAI_API_KEY in the backend terminal'),(404,'expired'),(502,'provider failed'),(None,'Cannot reach backend')])
+@pytest.mark.parametrize('status,message',[(503,'Set GOOGLE_API_KEY in the backend terminal'),(404,'expired'),(502,'provider failed'),(None,'Cannot reach backend')])
 def test_app_errors(app,status,message):
     at,api=app
     button(at,'Try the retail sample').click().run()

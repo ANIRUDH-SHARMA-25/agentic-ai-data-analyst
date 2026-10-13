@@ -101,8 +101,8 @@ class APIClient:
                 503: "The backend or AI provider is unavailable. Check its configuration and try again.",
                 504: "The analysis exceeded its time limit. Try a simpler question.",
             }
-            if response.status_code == 503 and isinstance(detail, str) and "OPENAI_API_KEY" in detail:
-                message = "AI analysis is not configured. Set OPENAI_API_KEY in the backend terminal; upload and inspection still work."
+            if response.status_code == 503 and isinstance(detail, str) and "GOOGLE_API_KEY" in detail:
+                message = "AI analysis is not configured. Set GOOGLE_API_KEY in the backend terminal; upload and inspection still work."
             else:
                 message = messages.get(response.status_code, "The backend could not complete the request.")
             kind = None

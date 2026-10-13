@@ -14,11 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      OPENAI_API_KEY: ""
+      GOOGLE_API_KEY: ""
+      GEMINI_API_KEY: ""
+      GOOGLE_FREE_TIER_CONFIRMED: "false"
       LANGSMITH_TRACING: "false"
       LANGCHAIN_TRACING_V2: "false"
       PYTHONDONTWRITEBYTECODE: "1"
-      TIKTOKEN_CACHE_DIR: ${{ github.workspace }}/.cache/tiktoken
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

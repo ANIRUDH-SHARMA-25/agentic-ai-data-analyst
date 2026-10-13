@@ -60,7 +60,7 @@ def test_nulls_json_and_quoted_identifiers():
     "SELECT * FROM other", "SELECT * FROM main.dataset", "SELECT * FROM db.main.dataset",
     "SELECT * FROM read_csv_auto('secret.csv')", "SELECT * FROM read_parquet('secret.parquet')",
     "SELECT * FROM range(1000000000)", "SELECT read_text('secret.txt') FROM dataset",
-    "SELECT getenv('OPENAI_API_KEY') FROM dataset", "SELECT current_setting('home_directory') FROM dataset",
+    "SELECT getenv('GOOGLE_API_KEY') FROM dataset", "SELECT current_setting('home_directory') FROM dataset",
     "SELECT * FROM dataset UNION SELECT * FROM dataset",
     "SELECT * FROM dataset JOIN dataset d ON true", "SELECT * FROM dataset, dataset d",
     "WITH d AS (SELECT * FROM dataset) SELECT * FROM d",

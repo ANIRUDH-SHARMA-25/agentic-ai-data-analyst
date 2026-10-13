@@ -155,7 +155,7 @@ def main() -> None:
                 st.success("Backend is ready.")
             except APIClientError as exc:
                 st.error(str(exc))
-        st.caption("Privacy: real AI analysis sends your question, recent conversation context, and relevant dataset-derived information to the configured LLM provider.")
+        st.caption("Privacy: real AI analysis sends your question, recent conversation context, and relevant dataset-derived information to Google Gemini. Free-tier content may be used by Google to improve its products; use synthetic data only.")
 
     st.title("Agentic AI Data Analyst")
     st.write("Explore your CSV, ask clear questions, and see the computed evidence behind every analysis.")

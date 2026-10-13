@@ -173,7 +173,7 @@ def run_benchmark() -> dict:
     def metric(group):
         items=[x for x in outcomes if x['group']==group]
         return {'passed':sum(x['passed'] for x in items),'total':len(items)}
-    return {'label':'MOCKED / DETERMINISTIC - not OpenAI model accuracy',
+    return {'label':'MOCKED / DETERMINISTIC - not Gemini model accuracy',
             'passed':sum(x['passed'] for x in outcomes),'total':len(outcomes),
             'sql_execution_correctness':metric('sql'),'followup_context_correctness':metric('followup'),
             'sql_rejection_behavior':metric('rejection'),'duration_seconds':round(perf_counter()-started,3),

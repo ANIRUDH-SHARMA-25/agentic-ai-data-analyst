@@ -2,7 +2,7 @@
 
 A resume-focused AI/ML project that will let users upload CSV data, ask
 natural-language questions, and receive computed analysis, charts, and
-AI-generated explanations. **Phases 1-6 implement data processing, the HTTP API, one analytical agent, the Streamlit dashboard, bounded conversation memory, mocked evaluations, and local container/CI configuration.**
+AI-generated explanations. **Phases 1-7 implement data processing, the HTTP API, one analytical agent, the Streamlit dashboard, bounded conversation memory, mocked evaluations, and local container/CI configuration.**
 
 ## Current capabilities
 
@@ -26,7 +26,7 @@ backend/config.py             validated API configuration
 backend/schemas.py            typed response schemas
 backend/upload_limits.py      bounded upload request handling
 backend/data/                 CSV processing, DuckDB, sessions, restricted SQL
-backend/agent/                lazy OpenAI model config and one LangChain agent
+backend/agent/                lazy Gemini model config and one LangChain agent
 frontend/                     Streamlit dashboard, HTTP client, chart rules
 data/sample/                 small tracked synthetic dataset
 evaluations/                 deterministic benchmark and network-free model
@@ -127,10 +127,10 @@ Errors consistently use `{"detail":"Human-readable message"}`.
 | 404 | Dataset is unknown or expired |
 | 409 | Conversation is busy or belongs to a different dataset |
 | 410 | Conversation is unknown, expired, or cleared |
-| 503 | Dataset capacity reached or OpenAI configuration/access unavailable |
-| 429 | OpenAI rate limit reached |
+| 503 | Dataset capacity reached or Gemini configuration/access unavailable |
+| 429 | Gemini rate limit reached |
 | 502 | Provider/model failed to produce a complete grounded answer |
-| 504 | OpenAI or SQL execution timed out |
+| 504 | Gemini or SQL execution timed out |
 
 The actual CSV bytes are validated; client MIME types are not trusted as proof
 of CSV format. Single-column CSVs are valid, so plain text with a header and
@@ -220,14 +220,14 @@ now checks the authorized /analyze endpoint rather than its previous absence. Te
 checks the retail sample through upload/inspection, malformed and oversized
 uploads (including missing/inaccurate Content-Length), unknown/expired sessions,
 isolation, capacity, JSON serialization, and temporary-file cleanup.
-The OpenAI integration also installs HTTPX2 transitively, resolving the earlier
-Starlette TestClient HTTPX deprecation warning. Tests block live OpenAI generation
+The installed LangChain/LangSmith dependencies include the HTTPX support used
+by Starlette TestClient. Tests block live Gemini generation
 and disable hosted tracing; no real key, API calls, or billed tokens are used.
 
 ## Phase 3: one tool-using analyst
 
 Each analysis request gets a fresh LangChain `create_agent` graph (LangGraph
-underneath), one configured ChatOpenAI model, and three closures bound to that
+underneath), one configured ChatGoogleGenerativeAI model (switched from OpenAI in Phase 7), and three closures bound to that
 request's dataset snapshot. Phase 5 supplies compact backend-managed context;
 there is no durable conversation storage or LangGraph checkpointer,
 multi-agent graph, web access, shell tool, filesystem tool, or Python execution.
@@ -248,7 +248,7 @@ The maximum provider wait across a run is therefore up to eight such timeouts,
 plus local processing; there is no additional whole-request cancellation timer.
 Hosted LangSmith tracing is disabled, including when inherited environment
 settings enable it. Dataset-derived schema, selected statistics/results, and
-the question are sent to OpenAI when a real analysis is requested.
+the question are sent to Gemini when a real analysis is requested.
 
 A first SQL validation/execution error is returned as sanitized tool feedback,
 allowing one correction. A second failure ends the request. Both attempts use
@@ -256,27 +256,66 @@ the same validator. SQL timeouts end immediately. The API refuses a successful
 answer after unresolved SQL errors or without schema inspection. Provider
 failures produce clear errors rather than fabricated fallback answers.
 
-### Configure OpenAI
+### Configure Gemini securely (free tier only)
 
-The application imports, starts, and serves deterministic endpoints/tests without
-a key. A real /analyze call without OPENAI_API_KEY returns HTTP 503.
-Set the key privately in the server terminal, not in tracked files:
+Phase 7 uses the official `langchain-google-genai` integration and
+`ChatGoogleGenerativeAI`, with **gemini-3.8-flash** only. The user approved this
+model after Google's [2.5 Flash notice](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash)
+restricted 2.5 access to existing users. Google currently lists 3.8 Flash
+standard input/output tokens as free and supports function calling. See
+[pricing](https://ai.google.dev/gemini-api/docs/pricing) and
+[model capabilities](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash).
+
+Create a key in [Google AI Studio](https://aistudio.google.com/api-keys) for a
+project showing **Free**, with billing disabled and no linked billing account.
+Do not enable billing, add payment details, upgrade, or purchase credits.
+A model name or key alone cannot prove the project is free. This application
+requires `GOOGLE_FREE_TIER_CONFIRMED=true`, a human attestation; it does not
+verify the project's billing state through a Cloud API. Stop if free access
+is unavailable. There is no alternate model/provider or OpenAI fallback.
+
+Run locally in PowerShell (never paste the key into Codex):
 
 ```powershell
-$secureKey = Read-Host 'OpenAI API key' -AsSecureString
-$env:OPENAI_API_KEY = [System.Net.NetworkCredential]::new('', $secureKey).Password
-$env:OPENAI_MODEL = 'gpt-4.1-mini'
-$env:OPENAI_TIMEOUT_SECONDS = '30'
-$env:OPENAI_MAX_OUTPUT_TOKENS = '1200'
-$env:TIKTOKEN_CACHE_DIR = Join-Path $PWD '.cache/tiktoken'
+Set-Location 'D:\GPT work\CODEX\agentic-ai-data-analyst'
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup_gemini.ps1
 ```
 
-OPENAI_MODEL is configurable; the requested gpt-4.1-mini is the initial default.
-Timeout can be 1-60 seconds and output tokens 1-4,000. Configuration is read
-when analysis starts. Invalid settings return a sanitized 503. No .env loader
-is used. The provider URL is fixed to the official OpenAI API; provider endpoint
-overrides are not supported in this phase. Account/model access, billing, and
-rate limits must be configured separately by the user.
+The script asks you to type FREE after checking AI Studio, then accepts a
+masked key. It saves only a Windows DPAPI-encrypted file in ignored `.tmp` on D:,
+readable by your Windows account, and makes no API call. The execution-policy
+option applies to this process only. Keep the encrypted file private too.
+After setup, the following script starts localhost servers in hidden processes,
+passes the decrypted key only to the backend, and prints their PIDs for stopping:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_local.ps1
+```
+
+Startup, upload, and inspection make no Gemini calls. Opening the dashboard
+alone makes none. **Do not submit analysis until the requested separate approval
+for live free-tier calls has been given.** The script prints a Stop-Process
+command for just its server PIDs. Stop them after verification.
+
+Manual environment configuration remains supported: GOOGLE_API_KEY,
+GOOGLE_MODEL=gemini-3.8-flash, GOOGLE_FREE_TIER_CONFIRMED=true,
+GOOGLE_TIMEOUT_SECONDS=30, and GOOGLE_MAX_OUTPUT_TOKENS=1200. Enter secrets
+through a masked prompt, never literal command history. No .env loader is used
+by Python. Imports/health work without credentials; analysis returns 503 until
+key and free-project confirmation are present. Both inherited Vertex AI and
+Enterprise routing flags are rejected before client construction. The official
+Developer API endpoint is fixed; SDK backend selection is also checked.
+
+Requests use low reasoning effort, text responses, no exposed thoughts, a
+30-second timeout, the existing token/call/tool bounds, and **zero automatic
+provider retries**. Google quotas are per project (not per key) and include
+requests/minute, tokens/minute, and requests/day. Exact current limits depend
+on the project/model; check [active limits in AI Studio](https://ai.google.dev/gemini-api/docs/rate-limits).
+Daily quotas reset at midnight Pacific time. One question makes multiple model
+requests; the normal agent permits at most eight. A 429 returns a clear quota
+message; it never upgrades, switches models, or retries automatically.
+Free-tier content may be used by Google to improve products: use only synthetic
+data. Do not send sensitive datasets, questions, or conversation context.
 
 ### Analyze a previously uploaded dataset
 
@@ -362,34 +401,27 @@ Prompt-injection instructions in dataset contents are ignored by policy, but a
 prompt is not a complete defense against malicious content. Tool/SQL boundaries
 remain enforced independently of the model.
 
-### Testing without an API key; optional approved live test
+### Mocked and separately approved live verification
 
-Run the existing full-suite command. Fake tool-calling models exercise the real
-create_agent graph and real restricted DuckDB execution. Tests cover all verified
-retail totals (260, 150, 120, total 530), tool selection, evidence, retries,
-model/tool limits, SQL bypass attempts, interruption, provider error mapping,
-dataset isolation, and upload-to-analysis JSON responses. The autouse fixture
-blocks ChatOpenAI generation before any network call and removes API keys from
-test configuration. No live API smoke test is part of automated verification.
+The complete suite and existing 28-case benchmark remain network-free. The
+fixture removes provider keys, disables tracing, and blocks synchronous and
+asynchronous ChatGoogleGenerativeAI generation. Provider errors, quota refusal,
+free-tier confirmation, inherited paid routes, and Gemini text content blocks
+have dedicated regressions. All previous SQL and memory safeguards remain.
 
-A live test can incur OpenAI charges. After explicit user approval for a live
-smoke test, configure the process key, start the localhost server, upload the
-sample, and run the analyze command above once. Review the returned SQL/table
-against known totals; do not rely only on prose. This live test has not been
-performed for Phase 3. Stop the server and remove the process key when done:
-
-```powershell
-Remove-Item Env:OPENAI_API_KEY -ErrorAction SilentlyContinue
-```
+For the small separately approved live evaluation, see
+[evaluations/README.md](evaluations/README.md). Real results belong in a separate
+ignored report with request counts; mocked results are never presented as
+Gemini accuracy. Neither setup nor CI runs that live evaluation automatically.
 
 References: [LangChain agents](https://docs.langchain.com/oss/python/langchain/agents),
-[OpenAI GPT-4.1 mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini),
+[Google integration](https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai),
 and [SQLGlot](https://sqlglot.com/sqlglot.html).
 
 ## Planned phases
 
 Later authorized work may add real-model quality testing, security review, and
-public deployment. Stop after Phase 6; public deployment is not authorized.
+public deployment. Stop after Phase 7; public deployment is not authorized.
 
 ## Phase 4: Streamlit dashboard
 
@@ -406,7 +438,7 @@ $env:FRONTEND_ANALYSIS_TIMEOUT_SECONDS = '300'
 ```
 
 Open [the dashboard](http://127.0.0.1:8501). Select a CSV and click **Load dataset**,
-or use **Try the retail sample**. Upload/inspection works without an OpenAI key.
+or use **Try the retail sample**. Upload/inspection works without an Gemini key.
 Configure the key only in the backend terminal for real analysis; the frontend
 never reads provider credentials. Both terminals use process environment settings,
 not automatic .env loading. Stop either server with Ctrl+C.
@@ -455,7 +487,7 @@ local, single-user portfolio application, with the Phase 3 security limitations.
 Frontend tests cover mocked HTTP contracts/errors, faithful retail totals
 (260/150/120), chart refusal/order/missing data, session transitions, and actual
 Streamlit AppTest upload, overview, chat, charts, expiry, and configuration errors.
-All tests forbid live OpenAI generation. Run the complete suite:
+All tests forbid live Gemini generation. Run the complete suite:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q --basetemp=.tmp/pytest
@@ -557,20 +589,20 @@ to choose the next rank/filter, then execute fresh SQL. The seed question is
 setup, not an extra scored case. Reports include total task success, SQL
 correctness, follow-up context correctness, rejection behavior, per-case outcomes,
 and measured duration; the command exits nonzero if a case fails. Output is
-labeled MOCKED / DETERMINISTIC, never OpenAI model accuracy. Report files are
+labeled MOCKED / DETERMINISTIC, never Gemini model accuracy. Report files are
 restricted to the repo's ignored .tmp or artifacts directories.
 
 These checks demonstrate conversation/data isolation, API/message integration,
 SQL execution and bounds, not real natural-language interpretation, robustness
-against all prompt injections, or OpenAI explanation accuracy. Scripted models
+against all prompt injections, or Gemini explanation accuracy. Scripted models
 have predetermined actions; changing a scripted SQL query to a wrong computation
 fails against the independent oracle. Real-model quality is unverified and is
 reserved for a later authorized phase. Normal configured live analysis remains
 available from earlier phases, but no live calls are part of Phase 5 work.
 
 See evaluations/README.md for the case inventory and result interpretation.
-Phase 6 adds local container configuration and CI below. No key onboarding,
-live-model benchmark, public deployment, or additional agents were performed.
+Phase 6 added local containers/CI. Phase 7 adds secure Gemini setup and a
+separate, approval-gated live evaluation; no public deployment is authorized.
 
 
 ## Phase 6: local Docker deployment and CI
@@ -621,11 +653,28 @@ be confirmed. C: had about 18 GiB free, D: about 140 GiB. Nothing was installed,
 relocated, or deleted. **Docker CLI validation, image builds, container startup,
 health/upload/inspection, frontend connectivity, missing-key behavior, writable
 path checks, logs/restarts, and container stopping were not run.**
-Follow the manual guide when Docker is available. No real OpenAI calls occurred.
+Follow the manual guide when Docker is available. No real Gemini calls occurred.
 
 This is local deployment preparation, not approval for public hosting. The
 SQL executor remains embedded in the backend process. Docker restrictions
 and SQL allowlists are defense in depth, not complete SQL isolation. UUIDs
 are not authentication; sessions disappear on restart. Access control, rate
 limiting, stronger execution isolation, and session handling need a later
-security review before public exposure. Stop after Phase 6.
+security review before public exposure. Stop after Phase 7.
+
+
+## Phase 7 verification status
+
+Gemini 3.8 Flash replaces the former OpenAI provider; requirements, Compose,
+CI, missing-key messages, privacy text, and provider tests are updated. The
+SDK route/retry/timeout configuration is checked without generation. The
+28-case benchmark remains MOCKED / DETERMINISTIC, not Gemini accuracy.
+Official free-tier availability is documented; account-specific access/billing
+requires the user's AI Studio check. Secure key setup and live approval completed. Two generation attempts were
+made: the initial 30-second request timed out (504), and the approved 60-second
+rerun was rejected by the provider (502). Both runs stopped at their first
+request; no live task completed. A separate model-metadata lookup succeeded,
+confirming key/model access, not generation success or free quota. The user
+confirmed Free tier with billing disabled; billing was not queried by the app.
+See [the live status](evaluations/phase7-live-status.md). No Docker/WSL installation or public deployment
+is part of Phase 7.

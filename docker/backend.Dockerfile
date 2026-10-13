@@ -5,7 +5,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     HOME=/tmp \
     TMPDIR=/app/.tmp \
-    TIKTOKEN_CACHE_DIR=/app/.tmp/tiktoken \
     LANGSMITH_TRACING=false \
     LANGCHAIN_TRACING_V2=false
 

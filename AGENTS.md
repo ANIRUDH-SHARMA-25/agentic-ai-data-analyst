@@ -1,13 +1,16 @@
 # Agentic AI Data Analyst development instructions
 
 ## Scope
-Phases 1-6 are authorized: CSV processing, internal DuckDB helpers, dataset
+Phases 1-7 are authorized: CSV processing, internal DuckDB helpers, dataset
 sessions, FastAPI, one LangChain create_agent workflow using LangGraph and
-langchain-openai, the OpenAI API, restricted SQL, and deterministic tests.
-Default to configurable gpt-4.1-mini. Phase 4 adds native Streamlit and deterministic
+langchain-google-genai, the Gemini Developer API, restricted SQL, and deterministic tests.
+Use gemini-3.8-flash only, as approved by the user after Google restricted 2.5
+Flash to existing users. No model/provider fallback. Phase 4 adds native Streamlit and deterministic
 Plotly charts over the existing HTTP API. Phase 5 adds bounded dataset-bound
 conversation memory and deterministic mocked evaluations. Phase 6 adds local
-Docker Compose, basic CI, and deployment documentation. Stop after Phase 6.
+Docker Compose, basic CI, and deployment documentation. Phase 7 switches providers and permits a small live evaluation only after
+free-project confirmation, secure local key entry, and separate human approval.
+Stop after Phase 7.
 Do not add public/cloud deployment, RAG/vector databases,
 multiple agents, or background infrastructure until explicitly requested.
 
@@ -34,7 +37,7 @@ multiple agents, or background infrastructure until explicitly requested.
   correction, and never bypass validation. Disable hosted tracing for analysis.
 - Read keys from the process environment. Do not log them, prompts, raw provider
   exceptions, or tracebacks in API responses. Start/import without an API key.
-- Never make billable/live API calls in tests. The test fixture blocks ChatOpenAI
+- Never make billable/live API calls in tests. The test fixture blocks ChatGoogleGenerativeAI
   generation. No live smoke test without explicit human approval.
 - Dataset sessions remain single-process with independent copies, lazy TTL,
   UUID IDs, UTC upload time, and capacity limits. UUIDs do not authenticate users.
@@ -49,7 +52,7 @@ use pip --no-cache-dir. Never track secrets or generated files. Only the small
 synthetic sample is tracked. Run the entire suite with D: basetemp, pip check,
 key-free API import, SQL rejection cases, and mocked upload-to-analysis checks
 before committing. Report actual checks and remaining limitations.
-Use descriptive commits; the user authorized Phase 6 commit/push to main.
+Use descriptive commits; the user authorized Phase 7 commit/push to main.
 Stop at the phase boundary.
 
 ## Frontend
@@ -77,3 +80,16 @@ are defense in depth, not an independent SQL sandbox. Do not install/migrate
 Docker, change Docker Desktop settings, delete user resources, expose publicly,
 or call live OpenAI. Verify Python/tests/evaluation and available Docker checks;
 report blocked Docker runtime checks accurately. Keep generated reports on D:.
+
+## Phase 7 zero-cost requirements
+Use Gemini Developer API explicitly (vertexai=False), GOOGLE_API_KEY only in
+the backend, and GOOGLE_MODEL=gemini-3.8-flash. Before model construction require
+GOOGLE_FREE_TIER_CONFIRMED=true, a human confirmation that the project is Free
+with billing disabled; this is not an API billing verification. Never enable
+billing, register payment methods, buy credits, use paid APIs, add OpenAI
+fallback, or switch models on quota exhaustion. No automatic provider retries.
+Use only synthetic data: Google may use free-tier content to improve products.
+Automated tests and the mocked benchmark never call a provider. Keep actual
+live results separate and count requests; no live call before explicit approval.
+Keep all key entry local and masked, with secrets absent from logs/Git/frontend.
+Do not install Docker/WSL, publicly deploy, or add unrelated features.

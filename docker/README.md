@@ -56,7 +56,7 @@ docker compose ps
 ```
 
 Stop if any command fails. Building downloads Python images and dependencies
-and requires internet access; it does not call OpenAI. `--wait` waits for both
+and requires internet access; it does not call Gemini. `--wait` waits for both
 services' health checks. Backend startup needs no key. Open
 [the dashboard](http://127.0.0.1:8501) and
 [API docs](http://127.0.0.1:8000/docs).
@@ -76,9 +76,10 @@ the whole .env to containers. Never use `env_file: .env` for the frontend.
 | UPLOAD_MAX_BYTES | 5242880; shared frontend/backend |
 | STREAMLIT_SERVER_MAX_UPLOAD_SIZE | 5; frontend server cap in whole MiB |
 | DATASET_TTL_SECONDS / MAX_ACTIVE_DATASETS | 1800 / 20; backend |
-| OPENAI_API_KEY | empty; backend runtime only |
-| OPENAI_MODEL | gpt-4.1-mini; backend |
-| OPENAI_TIMEOUT_SECONDS / OPENAI_MAX_OUTPUT_TOKENS | 30 / 1200; backend |
+| GOOGLE_API_KEY | empty; backend runtime only |
+| GOOGLE_FREE_TIER_CONFIRMED | false; set true only after checking Free project/billing disabled |
+| GOOGLE_MODEL | gemini-3.8-flash; backend |
+| GOOGLE_TIMEOUT_SECONDS / GOOGLE_MAX_OUTPUT_TOKENS | 30 / 1200; backend |
 | FRONTEND_REQUEST_TIMEOUT_SECONDS / FRONTEND_ANALYSIS_TIMEOUT_SECONDS | 30 / 300 |
 
 The Dockerfiles set container listeners to 0.0.0.0; Compose publishes only
@@ -95,9 +96,9 @@ expanded Compose configuration, container environments, or secrets in logs.
 
 ```powershell
 # Verify absence without printing a value; abort on nonzero exit.
-docker compose exec -T backend python -c "import os,sys; sys.exit(2 if os.environ.get('OPENAI_API_KEY') else 0)"
+docker compose exec -T backend python -c "import os,sys; sys.exit(2 if os.environ.get('GOOGLE_API_KEY') else 0)"
 if ($LASTEXITCODE -ne 0) { throw 'Backend key is configured: stop the key-free smoke test.' }
-docker compose exec -T frontend python -c "import os; assert not os.environ.get('OPENAI_API_KEY'); print('Frontend has no API key')"
+docker compose exec -T frontend python -c "import os; assert not os.environ.get('GOOGLE_API_KEY'); print('Frontend has no API key')"
 Invoke-RestMethod 'http://127.0.0.1:8000/health'
 Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8501/_stcore/health'
 # Verify the real frontend client reaches the backend over service DNS.
@@ -177,12 +178,14 @@ be stale, so clear the selected dataset/reload after a restart.
   sessions. Use small CSVs and lower session capacity for available RAM.
 - Restarted/expired session: upload again; an old UUID is not persistent storage.
 
-In a later authorized phase, a key may be supplied as `OPENAI_API_KEY` in the
+After secure key setup and explicit approval for free-tier live tests, a key may be supplied as `GOOGLE_API_KEY` in the
 backend process environment, or a private ignored `.env` for Compose
 interpolation, then recreate the backend with
 `docker compose up -d --no-deps --force-recreate backend`. Do not put keys in
 Dockerfiles, build arguments, URLs, command history containing literal values,
-GitHub workflow secrets for this key-free CI, or frontend settings. Runtime
+GitHub workflow secrets for this key-free CI, or frontend settings. Set GOOGLE_FREE_TIER_CONFIRMED=true only after checking AI Studio shows Free
+and billing is disabled. The model is restricted to gemini-3.8-flash, with no
+Vertex AI, Enterprise route, paid fallback, or retries. Runtime
 environment credentials are visible to administrators who can inspect containers;
 they are not a secret vault. Do not share expanded config/inspect environment
 output. No key onboarding or live analysis was performed in Phase 6.
@@ -209,3 +212,12 @@ shared session store, or durable storage. Before any public deployment, a later
 security review must address untrusted execution isolation, access control,
 rate limits, and session handling. This phase provides local deployment
 preparation only; no cloud deployment or new infrastructure is authorized.
+
+
+Phase 7 updates only provider configuration: GOOGLE_* replaces OPENAI_*, with
+Gemini 3.8 Flash approved by the user. Keep keys out of frontend containers.
+Free-tier content may be used by Google to improve products; use synthetic data.
+The Windows setup script encrypts a local key for direct Python startup; Compose
+does not read that encrypted file. For Compose supply the optional key securely
+in its shell environment, then clear it when finished. Docker runtime remains
+unverified here and this phase does not install Docker or WSL.
