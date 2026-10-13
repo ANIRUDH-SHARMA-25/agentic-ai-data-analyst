@@ -21,7 +21,8 @@ class DuckDBDataset:
     """Register a private snapshot of a validated DataFrame for one session.
 
     Use a context manager to close the database deterministically. No public
-    method accepts SQL; the later safe SQL layer must be designed separately.
+    method accepts SQL; the API/agent uses the separate safe_sql layer. This
+    helper is for trusted local Python use and is not a SQL sandbox.
     """
 
     def __init__(self, frame: pd.DataFrame) -> None:

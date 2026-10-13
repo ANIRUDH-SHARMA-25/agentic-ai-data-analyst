@@ -93,7 +93,8 @@ class APIClient:
                 404: "This dataset has expired or is no longer available. Upload the CSV again.",
                 409: "This conversation is busy or belongs to another dataset. Wait for the active analysis or start a new conversation.",
                 410: "This conversation has expired or was cleared. Start a new conversation; the dataset may still be available.",
-                413: "The upload exceeds the backend size limit. Choose a smaller CSV.",
+                413: ("The analysis request exceeds the backend size limit. Shorten the question." if analysis
+                      else "The upload exceeds the backend size limit. Choose a smaller CSV."),
                 415: "Only CSV files are supported.",
                 422: "This question or analysis is unsupported. Try a simpler question using the dataset's columns.",
                 429: "The AI provider is busy or rate-limited. Wait before submitting another question.",

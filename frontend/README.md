@@ -17,3 +17,7 @@ conversation clears backend context/history while retaining the dataset.
 Dataset switches clear both the old conversation and displayed results.
 Expired conversations require an explicit reset, and no paid request is
 retried automatically. No API key is needed for AppTest/mocked verification.
+
+Phase 8 renders questions and answers as plain text to prevent untrusted
+Markdown image/link declarations. SQL tables and deterministic charts are
+preserved. See ../docs/demo-portfolio.md for a key-free local demo.

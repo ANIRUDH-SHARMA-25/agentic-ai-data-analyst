@@ -1,4 +1,4 @@
-"""Phase 5 HTTP API. Start with: python -m uvicorn backend.main:app."""
+"""Local HTTP API. Run uvicorn with --host 127.0.0.1 and --workers 1."""
 
 import tempfile
 from contextlib import asynccontextmanager
@@ -120,7 +120,7 @@ def create_app(
 
     @application.post(
         "/analyze", response_model=AnalyzeResponse,
-        responses={code: {"model": ErrorResponse} for code in (404, 409, 410, 422, 429, 502, 503, 504)},
+        responses={code: {"model": ErrorResponse} for code in (400, 404, 409, 410, 413, 422, 429, 502, 503, 504)},
     )
     def analyze_dataset(request: AnalyzeRequest) -> AnalyzeResponse:
         try:

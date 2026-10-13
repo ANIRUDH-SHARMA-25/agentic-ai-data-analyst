@@ -2,7 +2,9 @@
 
 The application is for local, single-user use. Container execution has not been
 verified on this machine: Docker/Compose were not found and WSL is not installed.
-The steps below are the remaining manual acceptance checks, not reported results.
+The steps below are future manual acceptance references, not reported results
+or authorization to install Docker/WSL. Phase 8 performs static review only;
+public deployment and provider requests remain prohibited.
 
 ## Prepare Windows storage before a first build
 

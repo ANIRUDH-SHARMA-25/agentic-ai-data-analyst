@@ -1,16 +1,18 @@
-"""Bound upload request bodies before the multipart parser allocates/spools them."""
+"""Bound upload and analysis bodies before multipart/JSON parsing."""
 
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 MULTIPART_OVERHEAD_BYTES = 64 * 1024
+ANALYSIS_BODY_BYTES = 32 * 1024
 
 
 class UploadBodyLimit:
     """Buffer at most the file limit plus bounded multipart header overhead.
 
     Actual received bytes are checked even when Content-Length is absent or
-    inaccurate. Other endpoints pass through without buffering.
+    inaccurate. Analysis JSON is capped separately before parsing; other
+    endpoints pass through without buffering.
     """
 
     def __init__(self, app: ASGIApp, *, max_upload_bytes: int) -> None:
@@ -19,9 +21,11 @@ class UploadBodyLimit:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if (scope["type"] != "http" or scope["method"] != "POST"
-                or scope["path"].rstrip("/") != "/upload"):
+                or scope["path"].rstrip("/") not in {"/upload", "/analyze"}):
             await self.app(scope, receive, send)
             return
+        is_analysis = scope["path"].rstrip("/") == "/analyze"
+        body_limit = ANALYSIS_BODY_BYTES if is_analysis else self.max_body_bytes
         headers = dict(scope["headers"])
         length = headers.get(b"content-length")
         if length is not None:
@@ -32,7 +36,7 @@ class UploadBodyLimit:
             except ValueError:
                 await JSONResponse({"detail": "Invalid Content-Length header."}, 400)(scope, receive, send)
                 return
-            if declared_size > self.max_body_bytes:
+            if declared_size > body_limit:
                 await self._reject(scope, receive, send)
                 return
         chunks: list[bytes] = []
@@ -43,7 +47,7 @@ class UploadBodyLimit:
                 return
             chunk = message.get("body", b"")
             received += len(chunk)
-            if received > self.max_body_bytes:
+            if received > body_limit:
                 await self._reject(scope, receive, send)
                 return
             chunks.append(chunk)
@@ -62,4 +66,5 @@ class UploadBodyLimit:
         await self.app(scope, bounded_receive, send)
 
     async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await JSONResponse({"detail": "Upload request exceeds the size limit."}, 413)(scope, receive, send)
+        kind = "Analysis" if scope["path"].rstrip("/") == "/analyze" else "Upload"
+        await JSONResponse({"detail": f"{kind} request exceeds the size limit."}, 413)(scope, receive, send)

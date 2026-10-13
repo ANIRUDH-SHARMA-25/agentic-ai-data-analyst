@@ -65,13 +65,14 @@ def render_overview(info: dict) -> None:
 
 def render_analysis(entry: dict, index: int) -> None:
     with st.chat_message("user"):
-        st.write(entry["question"])
+        # Untrusted chat text must not declare remote images or Markdown links.
+        st.text(entry["question"])
     with st.chat_message("assistant"):
         if entry["error"]:
             st.error(entry["error"])
             return
         response = entry["response"]
-        st.write(response["answer"])
+        st.text(response["answer"])
         if response["rows"]:
             chart = build_chart(response["columns"], response["rows"])
             if chart.figure is not None:

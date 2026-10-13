@@ -1,7 +1,7 @@
 # Agentic AI Data Analyst development instructions
 
 ## Scope
-Phases 1-7 are authorized: CSV processing, internal DuckDB helpers, dataset
+Phases 1-8 are authorized: CSV processing, internal DuckDB helpers, dataset
 sessions, FastAPI, one LangChain create_agent workflow using LangGraph and
 langchain-google-genai, the Gemini Developer API, restricted SQL, and deterministic tests.
 Use gemini-3.8-flash only, as approved by the user after Google restricted 2.5
@@ -10,7 +10,8 @@ Plotly charts over the existing HTTP API. Phase 5 adds bounded dataset-bound
 conversation memory and deterministic mocked evaluations. Phase 6 adds local
 Docker Compose, basic CI, and deployment documentation. Phase 7 switches providers and permits a small live evaluation only after
 free-project confirmation, secure local key entry, and separate human approval.
-Stop after Phase 7.
+Phase 8 authorizes a focused security audit, targeted regression fixes,
+repository/documentation polish and portfolio material only. Stop after Phase 8.
 Do not add public/cloud deployment, RAG/vector databases,
 multiple agents, or background infrastructure until explicitly requested.
 
@@ -52,7 +53,7 @@ use pip --no-cache-dir. Never track secrets or generated files. Only the small
 synthetic sample is tracked. Run the entire suite with D: basetemp, pip check,
 key-free API import, SQL rejection cases, and mocked upload-to-analysis checks
 before committing. Report actual checks and remaining limitations.
-Use descriptive commits; the user authorized Phase 7 commit/push to main.
+Use descriptive commits; the user authorized Phase 8 commit/push to main.
 Stop at the phase boundary.
 
 ## Frontend
@@ -93,3 +94,17 @@ Automated tests and the mocked benchmark never call a provider. Keep actual
 live results separate and count requests; no live call before explicit approval.
 Keep all key entry local and masked, with secrets absent from logs/Git/frontend.
 Do not install Docker/WSL, publicly deploy, or add unrelated features.
+
+
+## Phase 8 security review and portfolio readiness
+Preserve application behavior, SQL allowlists, model/provider selection and
+free-tier safeguards. Make no Gemini generation or metadata requests. Do not
+install Docker/WSL or new software for the audit, enable billing, or deploy
+publicly. Only targeted fixes for demonstrated defects are in scope; document
+major architectural gaps. Use local-development-only classification. Distinguish
+mocked benchmark success from real-model accuracy. Document the observed Google
+503 UNAVAILABLE and unverified Docker runtime honestly. Demo upload/inspection
+and mocked charts without a provider key; never label scripted output Gemini.
+Run full offline tests, benchmark, dependencies/imports and available static
+container checks; verify secret/artifact exclusions, then commit/push to main
+and check CI. Stop after Phase 8; no subsequent live test is authorized.
