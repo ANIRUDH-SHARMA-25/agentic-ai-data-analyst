@@ -1,5 +1,12 @@
 # Phase 7 real Gemini status
 
+> Current status (2026-10-15): a later separately approved Gemini 3.6 Flash
+> two-question run passed in six real generation requests, with tool/SQL execution,
+> both explanations, contextual Home/150 follow-up and Plotly generation verified.
+> See [the final live record](live-retail-verification.md). Earlier failures,
+> proposals and test counts below are historical. No new API calls are authorized.
+
+
 Historical record: model references and results below describe their original
 run. The configured model is now 3.6; see [the migration record](gemini-3.6-migration.md).
 

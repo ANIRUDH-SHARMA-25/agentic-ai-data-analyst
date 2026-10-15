@@ -5,7 +5,7 @@ Scope: focused security review, two small fixes, documentation and portfolio
 preparation. No Gemini generation/metadata requests, model/provider changes,
 billing changes, Docker/WSL installation, new dependencies or public deployment.
 
-## Actual offline results
+## Original Phase 8 offline results (historical)
 
 | Check | Result |
 | --- | --- |
@@ -54,5 +54,33 @@ scanner was installed; dependency compatibility is not a clean-CVE assertion.
 
 Phase 8 offline scope is complete after commit/push and successful CI validation.
 The commit hash and exact CI link are reported at handoff rather than embedded
-in the commit itself. This does not mean the system is live-verified or ready
-for public deployment. No future provider request or deployment is authorized.
+in the commit itself. This original audit did not establish live verification or readiness
+for public deployment. Later bounded live evidence is recorded below. No future provider request or deployment is authorized.
+
+
+## Final offline consolidation after bounded live verification (2026-10-15)
+
+The separate [live retail record](../evaluations/live-retail-verification.md)
+confirms two questions passed in six real Gemini 3.6 Flash generation requests,
+all upstream HTTP 200. Actual schema/SQL execution, descending category totals,
+both final explanations, same-ID contextual Home/150 follow-up and Plotly
+chart generation passed. This is narrow live evidence, separate from the 28
+mocked cases; no broad real-model accuracy or future availability is claimed.
+
+The consolidation reviews the pending evaluator/result-shape/claim-validation
+fixes, their regression tests and synthetic-only bounded local diagnostics. It
+updates README, acceptance, architecture, security and portfolio status while
+preserving the original agent, SQL controls, memory, frontend, Gemini parameters
+and free-tier safeguards. No provider requests, credential decryption, package
+installation, Docker installation, billing change or deployment occurred during
+this finalization.
+
+Final checks: full automated suite 505 passed; mocked benchmark 28/28 (SQL
+18/18, follow-ups 3/3, rejections 4/4); pip check and key-free imports passed.
+Generated replies, charts, temporary reports and encrypted credentials stay
+ignored locally on D: and outside the commit/build context. Exact commit and
+push-triggered CI outcome are reported at handoff after verification.
+
+Remaining: real Streamlit browser acceptance, Docker image/runtime verification,
+and all public-hosting security requirements in acceptance-checks.md. Future
+provider requests and deployment require separate explicit approval.

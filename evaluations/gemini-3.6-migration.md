@@ -1,5 +1,12 @@
 # Controlled Gemini 3.6 Flash migration — 2026-10-15
 
+> Current status (2026-10-15): a later separately approved Gemini 3.6 Flash
+> two-question run passed in six real generation requests, with tool/SQL execution,
+> both explanations, contextual Home/150 follow-up and Plotly generation verified.
+> See [the final live record](live-retail-verification.md). Earlier failures,
+> proposals and test counts below are historical. No new API calls are authorized.
+
+
 The user explicitly approved replacing the application default and exact model
 allowlist with gemini-3.6-flash. This supersedes the historical 3.8-only setting.
 No provider generation or metadata requests were made during this migration.
@@ -103,3 +110,16 @@ The normal six-call count is an expectation, not a promise of exact behavior.
 
 The commit hash and push-triggered CI result are supplied at handoff. Live
 end-to-end acceptance remains pending even after CI success.
+
+
+Later evaluation update: Question 1 is live-verified and passed. Question 2 had
+correct intermediate SQL evidence, but its final response was not generated or
+verified. See [the historical run and offline evaluator correction](two-question-status.md);
+no fresh run is approved by the migration proposal above.
+
+
+Subsequent status: another separately approved run returned correct Question 1
+SQL and chart, but stopped at local explanation validation before Question 2.
+The historical answer text is unavailable. See the
+[offline explanation investigation](final-explanation-investigation.md); neither
+this migration nor the offline corrections establish a live follow-up pass.

@@ -5,17 +5,18 @@ LangChain/LangGraph agent. The agent can inspect a selected dataset, request
 statistics and generate restricted DuckDB SQL; Plotly charts visualize returned
 values using deterministic rules.
 
-**Status: local-development-only.** Phases 1–8 and a controlled Gemini 3.6 Flash
-migration are implemented. Two separately approved isolated 3.6 diagnostics
-passed: plain-text OK generation and automatic inspect_dataset({}) selection.
-The function was not executed. **Real end-to-end agent SQL, contextual follow-ups
-and genuine model-result charts remain unverified.** The former 3.8 integration
-returned upstream 503 UNAVAILABLE on several attempts; one 3.8 HTTP 200 lacked
-sufficient retained evidence to establish usable text. See
-[the migration record](evaluations/gemini-3.6-migration.md) and
-[historical recovery investigation](evaluations/gemini-recovery-investigation.md).
-Further provider requests need separate explicit approval. Docker configuration
-exists; image builds and container execution remain unverified.
+**Status: local-development-only.** Gemini 3.6 Flash passed a separately approved
+live two-question synthetic retail evaluation on 2026-10-15: grouped category
+revenue and a contextual second-category follow-up. All six real generation
+requests succeeded. Actual schema inspection and validated SQL execution,
+Electronics 260 / Home 150 / Stationery 120, both final explanations, same-ID
+conversation continuity and Plotly chart generation were verified.
+This narrow live check is separate from the **28-case mocked benchmark** and
+is not a broad real-model accuracy measurement. See the
+[live verification record](evaluations/live-retail-verification.md).
+Real Streamlit browser testing, Docker image/runtime verification and public-
+hosting security work remain outstanding. No public deployment is authorized;
+any further provider request requires fresh explicit approval.
 
 ## Capabilities and stack
 
@@ -55,7 +56,8 @@ statistics or a validated SELECT, then explains tool evidence. Only one tool
 per turn is permitted; at most one SQL correction is allowed. Five compact
 successful turns can resolve references, but cannot replace fresh evidence.
 Gemini chooses tool calls and produces prose; it does not execute Python or
-chart code. Charts are built locally. Live behavior remains to be verified.
+chart code. Charts are built locally. The two-question synthetic workflow is live-verified;
+broader datasets and question coverage remain unmeasured.
 See [module responsibilities and interview explanation](docs/architecture.md).
 
 ## Local Python setup
@@ -141,7 +143,7 @@ numeric upstream status and symbolic status.
 .\.venv\Scripts\python.exe -c "from backend.main import app; import streamlit; print(app.version)"
 ```
 
-**403 automated tests passed; 28/28 benchmark cases passed using scripted
+**505 automated tests passed; 28/28 benchmark cases passed using scripted
 model actions, not Gemini.**
 SQL correctness: 18/18; follow-up context: 3/3; SQL rejection: 4/4; two isolation
 cases and one unsupported-question case complete the benchmark. Expected values
@@ -181,8 +183,7 @@ See [security readiness](docs/security-readiness.md),
 
 ## Demo and portfolio
 
-[Demo guide and resume suggestions](docs/demo-portfolio.md) use genuine local
-upload/inspection and clearly labeled mocked chart tests. Isolated 3.6 OK and
-function selection are verified; successful end-to-end agent answers, live charts,
-public hosting, production readiness and real-model accuracy are not claimed.
-Further live testing and deployment require separate approval.
+[Demo guide and resume suggestions](docs/demo-portfolio.md) distinguish the
+verified two-question Gemini analysis and follow-up from the 28 mocked cases.
+Real Streamlit browser review, public hosting and general real-model accuracy
+are not claimed. Further live testing and deployment require separate approval.

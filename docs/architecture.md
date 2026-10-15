@@ -61,8 +61,10 @@ visualization rules. No authentication boundary is currently implemented.
 The agent is designed to inspect the dataset before computing results through a
 restricted SQL tool. SQL results, not model prose, are the numerical evidence.
 I tested the workflow with scripted actions and independent Pandas expectations.
-The 28-case benchmark is mocked. Gemini 3.6 passed isolated plain-text and
-function-selection tests, but real end-to-end analysis remains unverified.
+The 28-case benchmark is mocked. A separate live Gemini 3.6 check passed two
+synthetic retail questions in six requests, including schema/SQL execution,
+grounded answers, same-conversation follow-up and Plotly generation. This is
+narrow live evidence, not a broad model-accuracy measurement.
 The application remains local-only because UUIDs are not authorization and
 embedded DuckDB is not independently sandboxed.”
 

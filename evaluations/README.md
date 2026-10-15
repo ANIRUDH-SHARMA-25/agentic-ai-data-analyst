@@ -79,10 +79,10 @@ second run failed on their first generation request (504 timeout, then 502
 provider error; upstream status was not retained). A subsequent separately
 approved plain-text diagnostic without tools returned actual Google HTTP
 503 UNAVAILABLE. It stopped after exactly one attempt with no retries. No live
-numerical task completed. All further generation and metadata requests are
+numerical task completed in those historical 3.8 runs. All further generation and metadata requests are
 on hold until fresh explicit approval. Gemini 3.6 Flash is now the explicitly approved application model after
 separate isolated plain-text and AUTO function-selection successes. Neither
-test executed a tool or proved end-to-end analysis. No fallback is permitted. See
+isolated test executed a tool; subsequent two-question live evidence is recorded below. No fallback is permitted. See
 [the recorded live status](phase7-live-status.md).
 
 In the dashboard inspect each successful answer, its SQL/table, and the category
@@ -115,3 +115,30 @@ the human approval step. The runner uses FastAPI TestClient with the real agent
 and Gemini provider, validates actual SQL/tool evidence, and saves a standalone
 Plotly category-chart HTML on D:. Browser review is still required. Attempt
 counts include failed generation attempts, not just successful responses.
+
+
+## Two-question retail runner and current live status
+
+Both synthetic retail questions passed in the separately approved 2026-10-15
+Gemini 3.6 Flash run: six real generation requests, all Google HTTP 200, actual
+schema/SQL tool execution, correct ordered totals, both final explanations,
+same-conversation Home/150 follow-up and Plotly bar chart generation. See the
+[live verification record](live-retail-verification.md). This is two live cases,
+not the 28-case mocked benchmark and not a broad real-model accuracy estimate.
+
+The separate `two_question_gemini.py` contains only the grouped-revenue and
+contextual second-category questions. It accepts single-row, scalar or complete
+correctly ordered table evidence for the follow-up while separately requiring
+the correct final answer and conversation continuity. Historical shape and
+explanation failures and their offline corrections remain in
+[two-question history](two-question-status.md) and the
+[explanation investigation](final-explanation-investigation.md).
+
+The runner retains a redacted synthetic-only final explanation (maximum 4096
+characters and 8192 UTF-8 bytes) in ignored repository `.tmp` on D:. No generated
+reply or claim excerpt is printed to the console or committed. This diagnostic
+exception does not apply to private datasets or the four-question runner.
+The `--first-question-only` option limits a separately approved run to one
+question/four attempts; the default is exactly two questions/eight attempts.
+No further generation or metadata requests are authorized. Real Streamlit
+browser testing and Docker runtime verification remain outstanding.

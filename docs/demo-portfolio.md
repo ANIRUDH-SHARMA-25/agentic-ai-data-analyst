@@ -19,11 +19,14 @@
    They execute the real UI, render a category bar chart and an ordered time
    series from explicitly injected results, and inspect Plotly chart values.
    AppTest verifies widget state; it is not a screenshot of a live Gemini run.
-5. Explain the intended live flow using the architecture guide. State that the
-   former 3.8 model returned Google 503 UNAVAILABLE. The configured 3.6 model
-   passed isolated OK generation and function selection, while genuine agent
-   answers, SQL computation, follow-ups and live charts still
-   require separately approved verification. Docker runtime remains untested.
+5. Explain the verified live flow using the architecture guide and
+   [bounded live record](../evaluations/live-retail-verification.md): Gemini 3.6
+   passed two synthetic retail questions in six real generation requests,
+   including actual tool/SQL execution, both final explanations, same-ID context
+   and Home/150 follow-up correctness. Plotly generation passed; a real Streamlit
+   browser acceptance session and Docker runtime remain unverified. Show only
+   the sanitized tracked summary; retained replies/charts stay local and ignored.
+   Do not send a new provider request during this key-free demo.
 
 ```powershell
 .\.venv\Scripts\python.exe -m examples.inspect_retail
@@ -45,7 +48,8 @@ datasets remain until lazy expiry or shutdown; explain that limitation if asked.
   tools, SQL is validated, and charts come from returned values.
 - Explain why 28/28 scripted cases validate workflow correctness rather than
   model accuracy; describe independent numerical oracles and rejection cases.
-- Explain dataset-bound conversation memory and fresh evidence on follow-ups.
+- Explain dataset-bound conversation memory and fresh evidence on follow-ups;
+  distinguish the two live retail questions from 28 scripted benchmark cases.
 - Discuss the two audit fixes and why embedded DuckDB/UUIDs are not enough for
   public multi-user operation.
 - Describe upstream 503 separately from the backend's translated 502.
@@ -60,10 +64,16 @@ Use only wording consistent with your own contribution and demonstrated scope:
   controls, sanitized provider diagnostics and deterministic Plotly charts.
 - Verified 28/28 scripted benchmark cases with independent Pandas expectations
   and an automated suite covering API, SQL rejection, sessions and UI behavior.
+- Verified two synthetic retail questions using six real Gemini 3.6 Flash
+  requests, including validated SQL, grounded explanations, a contextual Home/150
+  follow-up and Plotly chart generation; kept this distinct from mocked coverage.
 - Completed a focused security review, fixing oversized analysis-body parsing
   and untrusted Markdown rendering; documented public-hosting prerequisites.
 
-Do not claim production deployment, real Gemini accuracy, successful live
-natural-language answers, independent security certification or sole authorship
-unless you have separate evidence for those claims. See phase8-verification.md
-for the final automated test count; Gemini availability remains an open blocker.
+Do not claim production deployment, broad real-model accuracy, independent
+security certification or sole authorship without separate evidence. The live
+success is limited to two synthetic retail questions and six requests; it is not
+a reliability study or browser test. See phase8-verification.md for the final
+automated count and acceptance-checks.md for remaining browser, Docker and
+public-hosting requirements. Historical 3.8 unavailability does not describe the
+successful 3.6 run or guarantee future provider availability.
