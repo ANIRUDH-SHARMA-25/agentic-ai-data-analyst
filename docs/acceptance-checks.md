@@ -38,3 +38,15 @@ without provider credentials, quotas/cancellation, HTTPS/network policy,
 lifecycle/deletion, secret management, vulnerability/container review and
 multi-user recovery tests. UUIDs, validated SQL and a container alone do not
 satisfy these requirements. No public deployment is authorized.
+
+
+Browser follow-up status (2026-10-15): the key-free smoke test passed with the
+sample button (direct file-picker automation remained blocked). The separately
+approved genuine browser test executed correct schema/SQL but stopped at its
+third generation on Google 429 RESOURCE_EXHAUSTED; final answers, analysis charts
+and nonempty reset remain unverified in a real browser. User-reported historical
+RPD 21/20 supports daily quota exhaustion; the 28-day peak view does not prove
+current quota availability after reset. The browser wrapper's incorrect 422
+mapping is corrected offline. See the
+[quota investigation](../evaluations/browser-quota-investigation.md). Wait for a
+reset, fresh Free-tier confirmation and separate approval before any new calls.

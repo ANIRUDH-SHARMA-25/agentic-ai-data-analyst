@@ -97,7 +97,7 @@ class APIClient:
                       else "The upload exceeds the backend size limit. Choose a smaller CSV."),
                 415: "Only CSV files are supported.",
                 422: "This question or analysis is unsupported. Try a simpler question using the dataset's columns.",
-                429: "The AI provider is busy or rate-limited. Wait before submitting another question.",
+                429: "Gemini free-tier quota was exhausted or the request was rate-limited. Wait for quota availability before another question. No automatic retry or paid fallback was used.",
                 502: "The AI provider could not complete this analysis. No answer was substituted.",
                 503: "The backend or AI provider is unavailable. Check its configuration and try again.",
                 504: "The analysis exceeded its time limit. Try a simpler question.",

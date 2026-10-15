@@ -14,6 +14,9 @@ conversation continuity and Plotly chart generation were verified.
 This narrow live check is separate from the **28-case mocked benchmark** and
 is not a broad real-model accuracy measurement. See the
 [live verification record](evaluations/live-retail-verification.md).
+A later browser acceptance run stopped before its first final explanation with
+Google 429; user-observed historical daily usage was 21/20. Current post-reset
+quota is unverified. See the [quota diagnosis and offline fix](evaluations/browser-quota-investigation.md).
 Real Streamlit browser testing, Docker image/runtime verification and public-
 hosting security work remain outstanding. No public deployment is authorized;
 any further provider request requires fresh explicit approval.
@@ -143,7 +146,7 @@ numeric upstream status and symbolic status.
 .\.venv\Scripts\python.exe -c "from backend.main import app; import streamlit; print(app.version)"
 ```
 
-**505 automated tests passed; 28/28 benchmark cases passed using scripted
+**524 automated tests passed; 28/28 benchmark cases passed using scripted
 model actions, not Gemini.**
 SQL correctness: 18/18; follow-up context: 3/3; SQL rejection: 4/4; two isolation
 cases and one unsupported-question case complete the benchmark. Expected values

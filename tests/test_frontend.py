@@ -285,3 +285,32 @@ def test_app_large_integer_results(app):
     assert at.dataframe[-1].value['value'].iloc[0]==str(2**63+1)
     import pandas as pd
     assert pd.isna(at.dataframe[-1].value['value'].iloc[1])
+
+
+def test_quota_message_explicit_and_sanitized_no_retry():
+    seen=[]
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(429,json={"detail":"private quota credentials"})
+    with pytest.raises(APIClientError) as caught:client(handler).analyze(ID,"Revenue?")
+    message=str(caught.value)
+    assert caught.value.status_code==429
+    assert "quota" in message.lower() and "rate-limited" in message
+    assert "retry" in message and "fallback" in message
+    assert "unsupported" not in message.lower() and "private quota credentials" not in message
+    assert len(seen)==1
+
+
+def test_app_renders_actual_client_quota_message_without_retry(app):
+    at,api=app
+    button(at,'Try the retail sample').click().run()
+    quota_api=client(lambda request:httpx.Response(429,json={"detail":"private provider detail"}))
+    api.analyze.side_effect=lambda *args,**kwargs:quota_api.analyze(*args,**kwargs)
+    at.chat_input[0].set_value('Revenue?').run()
+    assert not at.exception and at.error
+    message=at.error[0].value
+    assert 'quota' in message.lower() and 'rate-limited' in message
+    assert 'unsupported' not in message.lower() and 'private provider detail' not in message
+    assert not at.code and not at.get('plotly_chart')
+    at.run()
+    assert api.analyze.call_count==1
