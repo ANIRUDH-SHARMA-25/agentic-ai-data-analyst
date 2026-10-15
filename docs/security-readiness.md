@@ -3,6 +3,8 @@
 Classification: **local-development-only, trusted single user, synthetic data**.
 This is a focused source/configuration review and offline regression check,
 not a penetration test, vulnerability certification or public-hosting approval.
+Current model references reflect the later user-approved 3.6 migration; the
+original Phase 8 audit did not change models.
 The reviewed baseline is Phase 7 commit 75bdecd; Phase 8 changes are recorded in
 [verification](phase8-verification.md). No model/provider switch, Gemini
 request, billing change, package installation or deployment was performed.
@@ -24,7 +26,7 @@ request, billing change, package installation or deployment was performed.
 | Secrets/errors/logging | Backend-only process key, optional Windows-user DPAPI local storage, ignore/build exclusions, disabled hosted tracing, safe API details and allowlisted provider diagnostics | Environment credentials are accessible to process/host admins; unexpected framework/library errors may reach local stderr; access logs include session URLs; public logging/redaction and secret rotation needed |
 | Network/HTTPS | Python listeners and Compose host ports default to 127.0.0.1; no permissive CORS added | Localhost is not authentication; a user can override listener flags; no public HTTPS, proxy/host/origin policy or public abuse boundary |
 | Dependencies/containers/CI | Pinned direct requirements, key-free tests/CI, least-privilege workflow, separate non-root images, read-only roots/tmpfs, capability/resource restrictions | Dependencies not certified vulnerability-free; no installed vulnerability scanner/image audit. Transitives, action version tags and image tags lack complete hash/digest pinning; actual builds/resource behavior unverified |
-| Provider privacy/free tier | Fixed Gemini 3.8 Flash Developer API, Free-project attestation, no retries or fallback | Billing is human-confirmed, not programmatically audited. Questions/context/schema/statistics/results can contain sensitive values; use synthetic input only |
+| Provider privacy/free tier | Fixed Gemini 3.6 Flash Developer API, Free-project attestation, no retries or fallback | Billing is human-confirmed, not programmatically audited. Questions/context/schema/statistics/results can contain sensitive values; use synthetic input only |
 
 ## Demonstrated defects fixed
 

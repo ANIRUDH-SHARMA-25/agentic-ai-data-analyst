@@ -1,5 +1,8 @@
 # Phase 7 real Gemini status
 
+Historical record: model references and results below describe their original
+run. The configured model is now 3.6; see [the migration record](gemini-3.6-migration.md).
+
 Model: gemini-3.8-flash (user-approved replacement for restricted 2.5 Flash).
 Date: 2026-10-14, Asia/Calcutta.
 

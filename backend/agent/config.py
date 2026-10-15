@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 @dataclass(frozen=True)
 class AgentSettings:
     api_key: str = field(default="", repr=False)
-    model: str = "gemini-3.8-flash"
+    model: str = "gemini-3.6-flash"
     model_timeout_seconds: int = 30
     max_output_tokens: int = 1200
     max_model_calls: int = 8
@@ -15,8 +15,8 @@ class AgentSettings:
     free_tier_confirmed: bool = False
 
     def __post_init__(self) -> None:
-        if self.model != "gemini-3.8-flash":
-            raise ValueError("GOOGLE_MODEL must be gemini-3.8-flash; no model fallback is permitted.")
+        if self.model != "gemini-3.6-flash":
+            raise ValueError("GOOGLE_MODEL must be gemini-3.6-flash; no model fallback is permitted.")
         if type(self.free_tier_confirmed) is not bool:
             raise ValueError("free_tier_confirmed must be a boolean.")
         bounds = {"model_timeout_seconds": 60, "max_output_tokens": 4000,
@@ -34,7 +34,7 @@ class AgentSettings:
         return cls(
             free_tier_confirmed=confirmation == "true",
             api_key=os.environ.get("GOOGLE_API_KEY", "").strip(),
-            model=os.environ.get("GOOGLE_MODEL", "gemini-3.8-flash"),
+            model=os.environ.get("GOOGLE_MODEL", "gemini-3.6-flash"),
             model_timeout_seconds=int(os.environ.get("GOOGLE_TIMEOUT_SECONDS", 30)),
             max_output_tokens=int(os.environ.get("GOOGLE_MAX_OUTPUT_TOKENS", 1200)),
         )

@@ -5,11 +5,17 @@ LangChain/LangGraph agent. The agent can inspect a selected dataset, request
 statistics and generate restricted DuckDB SQL; Plotly charts visualize returned
 values using deterministic rules.
 
-**Status: local-development-only.** Phases 1–8 are implemented. The Gemini
-integration is implemented, but successful real-model analysis is unverified:
-the latest approved plain-text request returned **Google HTTP 503 UNAVAILABLE**.
-All further Gemini generation and metadata requests are on hold. Docker
-configuration exists; image builds and container execution remain unverified.
+**Status: local-development-only.** Phases 1–8 and a controlled Gemini 3.6 Flash
+migration are implemented. Two separately approved isolated 3.6 diagnostics
+passed: plain-text OK generation and automatic inspect_dataset({}) selection.
+The function was not executed. **Real end-to-end agent SQL, contextual follow-ups
+and genuine model-result charts remain unverified.** The former 3.8 integration
+returned upstream 503 UNAVAILABLE on several attempts; one 3.8 HTTP 200 lacked
+sufficient retained evidence to establish usable text. See
+[the migration record](evaluations/gemini-3.6-migration.md) and
+[historical recovery investigation](evaluations/gemini-recovery-investigation.md).
+Further provider requests need separate explicit approval. Docker configuration
+exists; image builds and container execution remain unverified.
 
 ## Capabilities and stack
 
@@ -22,7 +28,7 @@ configuration exists; image builds and container execution remain unverified.
 - Test the API, agent, SQL boundaries and Streamlit UI without provider access.
 
 Python 3.11 · Pandas/NumPy · FastAPI/Pydantic · LangChain/LangGraph ·
-langchain-google-genai (Gemini 3.8 Flash) · DuckDB/SQLGlot · Streamlit/Plotly ·
+langchain-google-genai (Gemini 3.6 Flash) · DuckDB/SQLGlot · Streamlit/Plotly ·
 HTTPX · Pytest · GitHub Actions. Runtime requirements are pinned by service.
 
 ## Architecture and agent workflow
@@ -135,7 +141,7 @@ numeric upstream status and symbolic status.
 .\.venv\Scripts\python.exe -c "from backend.main import app; import streamlit; print(app.version)"
 ```
 
-**383 automated tests passed; 28/28 benchmark cases passed using scripted
+**403 automated tests passed; 28/28 benchmark cases passed using scripted
 model actions, not Gemini.**
 SQL correctness: 18/18; follow-up context: 3/3; SQL rejection: 4/4; two isolation
 cases and one unsupported-question case complete the benchmark. Expected values
@@ -167,8 +173,8 @@ is displayed without Markdown parsing.
 Real analysis sends questions, recent context and relevant dataset-derived
 schema/statistics/results to Google; Free-tier data may be used for product
 improvement. Billing remains human-confirmed disabled; the app does not audit
-billing. No provider/model fallback exists. Gemini 3.7 Flash is only an unverified,
-conditional research candidate, not an approved replacement.
+billing. No provider/model fallback exists. The only permitted application model is gemini-3.6-flash; neither 3.8 nor
+another model is an automatic fallback.
 See [security readiness](docs/security-readiness.md),
 [historical live evidence](evaluations/phase7-live-status.md) and
 [prioritized acceptance checks](docs/acceptance-checks.md).
@@ -176,7 +182,7 @@ See [security readiness](docs/security-readiness.md),
 ## Demo and portfolio
 
 [Demo guide and resume suggestions](docs/demo-portfolio.md) use genuine local
-upload/inspection and clearly labeled mocked chart tests. No successful Gemini
-answer, live chart, public hosting, production readiness or real-model accuracy
-is claimed. Phase 8 ends with offline security/documentation work; live testing
-and deployment require separate approval.
+upload/inspection and clearly labeled mocked chart tests. Isolated 3.6 OK and
+function selection are verified; successful end-to-end agent answers, live charts,
+public hosting, production readiness and real-model accuracy are not claimed.
+Further live testing and deployment require separate approval.

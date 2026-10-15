@@ -47,7 +47,7 @@ This benchmark verifies deterministic workflow behavior and regression safety.
 It does **not** measure Gemini accuracy or prove live follow-up interpretation.
 Scripted actions are known in advance. Pytest additionally runs the benchmark
 twice and deliberately changes a query to confirm the independent oracle catches
-wrong computation. Phase 7 prepares a separately approved real Gemini evaluation below; the
+wrong computation. The live harness below still requires separate approval; the
 mocked benchmark continues to make no provider calls.
 
 
@@ -80,9 +80,9 @@ provider error; upstream status was not retained). A subsequent separately
 approved plain-text diagnostic without tools returned actual Google HTTP
 503 UNAVAILABLE. It stopped after exactly one attempt with no retries. No live
 numerical task completed. All further generation and metadata requests are
-on hold until fresh explicit approval. Gemini 3.8 Flash remains configured;
-Gemini 3.7 Flash is only a conditional future research candidate, with no
-verified free-tier eligibility or approved switch. See
+on hold until fresh explicit approval. Gemini 3.6 Flash is now the explicitly approved application model after
+separate isolated plain-text and AUTO function-selection successes. Neither
+test executed a tool or proved end-to-end analysis. No fallback is permitted. See
 [the recorded live status](phase7-live-status.md).
 
 In the dashboard inspect each successful answer, its SQL/table, and the category
@@ -100,7 +100,7 @@ $secureKey = ConvertTo-SecureString ((Get-Content '.tmp/gemini-key.dpapi' -Raw).
 try {
     $env:GOOGLE_API_KEY = [System.Net.NetworkCredential]::new('', $secureKey).Password
     $env:GOOGLE_FREE_TIER_CONFIRMED = 'true'
-    $env:GOOGLE_MODEL = 'gemini-3.8-flash'
+    $env:GOOGLE_MODEL = 'gemini-3.6-flash'
     $env:GOOGLE_GENAI_USE_VERTEXAI = 'false'
     $env:GOOGLE_GENAI_USE_ENTERPRISE = 'false'
     .\.venv\Scripts\python.exe -m evaluations.live_gemini --approve-live-free-tier --max-calls 16

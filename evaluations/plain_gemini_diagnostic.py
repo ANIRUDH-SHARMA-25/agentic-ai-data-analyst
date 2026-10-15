@@ -17,6 +17,68 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / ".tmp/gemini-plain-diagnostic.json"
 
 
+FINISH_REASONS = frozenset({"STOP", "MAX_TOKENS", "SAFETY", "RECITATION",
+                            "OTHER", "MALFORMED_FUNCTION_CALL", "BLOCKLIST",
+                            "PROHIBITED_CONTENT", "SPII"})
+
+
+def summarize_reply(reply):
+    """Keep response characteristics, never text, thoughts or raw metadata."""
+    content = reply.content
+    pieces = []
+    unsupported = False
+    if isinstance(content, str):
+        pieces.append(content)
+        structure = "string"
+    elif isinstance(content, list):
+        structure = "list"
+        for block in content:
+            if isinstance(block, str):
+                pieces.append(block)
+            elif isinstance(block, dict) and (block.get("thought") or block.get("type") in {"thinking", "reasoning"}):
+                continue
+            elif isinstance(block, dict) and block.get("type") == "text" and isinstance(block.get("text"), str):
+                pieces.append(block["text"])
+            else:
+                unsupported = True
+    else:
+        structure, unsupported = "unsupported", True
+    text = "".join(pieces).strip()
+    metadata = getattr(reply, "response_metadata", None) or {}
+    candidate = metadata.get("finish_reason") if isinstance(metadata, dict) else None
+    finish = candidate if type(candidate) is str and candidate in FINISH_REASONS else None
+    exact = text == "OK"
+    # Formatting tolerance is diagnostic only, never replaces the strict check.
+    relaxed = text.strip('`*" ' + chr(39)).casefold().rstrip('.!') == "ok"
+    if finish == "MAX_TOKENS":
+        category = "output_truncated"
+    elif finish in FINISH_REASONS - {"STOP", "MAX_TOKENS"}:
+        category = "generation_not_completed"
+    elif unsupported:
+        category = "unsupported_content"
+    elif not text:
+        category = "empty_text"
+    elif exact:
+        category = "success"
+    elif relaxed:
+        category = "expected_text_format_variation"
+    else:
+        category = "unexpected_text"
+    usage = getattr(reply, "usage_metadata", None) or {}
+    def count(value):
+        return value if type(value) is int and 0 <= value <= 1_000_000 else None
+    usage = usage if isinstance(usage, dict) else {}
+    details = usage.get("output_token_details", {})
+    details = details if isinstance(details, dict) else {}
+    return {"category": category, "content_structure": structure,
+            "has_visible_text": bool(text), "visible_text_characters": len(text),
+            "unsupported_content_present": unsupported, "finish_reason": finish,
+            "output_truncated": finish == "MAX_TOKENS", "reply_was_ok": exact,
+            "reply_matches_ok_relaxed": relaxed,
+            "output_tokens": count(usage.get("output_tokens")),
+            "reasoning_tokens": count(details.get("reasoning"))}
+
+
 def run_plain(*, approved=False, output=OUTPUT, model_factory=create_gemini_model):
     if not approved:
         raise ValueError("Separate human approval for exactly one request is required.")
@@ -25,14 +87,14 @@ def run_plain(*, approved=False, output=OUTPUT, model_factory=create_gemini_mode
     settings = replace(AgentSettings.from_environment(), model_timeout_seconds=60,
                        max_output_tokens=256, max_model_calls=1)
     model = model_factory(settings)
-    messages = [HumanMessage(content='Reply with exactly OK.')]
+    messages = [HumanMessage(content='Reply with OK.')]
     request = model._prepare_request(messages)
     config = request["config"]
     if (config.tools or config.tool_config or config.system_instruction
             or config.http_options.timeout != 60000
             or config.http_options.retry_options.attempts != 0
             or config.max_output_tokens != 256
-            or request["model"] != "gemini-3.8-flash"):
+            or request["model"] != "gemini-3.6-flash"):
         raise ValueError("Request limits or plain-text constraints failed; no request sent.")
     report = {"model": settings.model, "kind": "plain_text_no_tools",
               "generation_attempts": 0, "maximum_output_tokens": 256,
@@ -47,7 +109,7 @@ def run_plain(*, approved=False, output=OUTPUT, model_factory=create_gemini_mode
     def before_request(http_request):
         if (report["generation_attempts"] != 0 or http_request.method != "POST"
                 or http_request.url.host != "generativelanguage.googleapis.com"
-                or http_request.url.path != "/v1beta/models/gemini-3.8-flash:generateContent"):
+                or http_request.url.path != "/v1beta/models/gemini-3.6-flash:generateContent"):
             raise RuntimeError("Additional or unexpected HTTP request blocked.")
         report["generation_attempts"] = 1
         report["category"] = "in_progress"
@@ -65,13 +127,9 @@ def run_plain(*, approved=False, output=OUTPUT, model_factory=create_gemini_mode
         with warnings.catch_warnings(), tracing_context(enabled=False):
             warnings.simplefilter("ignore")
             reply = model.invoke(messages)
-        content = reply.content
-        if isinstance(content, list):
-            content = "".join(b.get("text", "") for b in content
-                              if isinstance(b, dict) and b.get("type") == "text" and not b.get("thought"))
-        report["reply_was_ok"] = isinstance(content, str) and content.strip() == "OK"
-        report["success"] = report["reply_was_ok"] and report["upstream_http_status"] == 200
-        report["category"] = "success" if report["success"] else "unexpected_reply"
+        report.update(summarize_reply(reply))
+        report["provider_request_succeeded"] = report["upstream_http_status"] == 200
+        report["success"] = report["category"] == "success" and report["provider_request_succeeded"]
     except Exception as exc:
         diagnostic = provider_diagnostic(exc)
         if diagnostic["upstream_http_status"] is None:

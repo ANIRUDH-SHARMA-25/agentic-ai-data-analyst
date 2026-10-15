@@ -20,8 +20,9 @@
    series from explicitly injected results, and inspect Plotly chart values.
    AppTest verifies widget state; it is not a screenshot of a live Gemini run.
 5. Explain the intended live flow using the architecture guide. State that the
-   single approved plain-text Gemini request returned Google 503 UNAVAILABLE,
-   and that genuine model answers, SQL choice, follow-ups and live charts still
+   former 3.8 model returned Google 503 UNAVAILABLE. The configured 3.6 model
+   passed isolated OK generation and function selection, while genuine agent
+   answers, SQL computation, follow-ups and live charts still
    require separately approved verification. Docker runtime remains untested.
 
 ```powershell

@@ -26,7 +26,7 @@ try {
     try { $env:GOOGLE_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($keyPointer) }
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($keyPointer) }
     $env:GOOGLE_FREE_TIER_CONFIRMED = 'true'
-    $env:GOOGLE_MODEL = 'gemini-3.8-flash'; $env:GOOGLE_GENAI_USE_VERTEXAI = 'false'; $env:GOOGLE_GENAI_USE_ENTERPRISE = 'false'
+    $env:GOOGLE_MODEL = 'gemini-3.6-flash'; $env:GOOGLE_GENAI_USE_VERTEXAI = 'false'; $env:GOOGLE_GENAI_USE_ENTERPRISE = 'false'
     $backendProcess = Start-Process -FilePath $pythonPath -ArgumentList @('-m','uvicorn','backend.main:app','--host','127.0.0.1','--port','8000','--workers','1') -WorkingDirectory $projectRoot -WindowStyle Hidden -RedirectStandardOutput '.tmp/backend.stdout.log' -RedirectStandardError '.tmp/backend.stderr.log' -PassThru
     # Clear all provider credentials before the frontend inherits its environment.
     [Environment]::SetEnvironmentVariable('GOOGLE_API_KEY',$null,'Process')

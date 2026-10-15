@@ -1,5 +1,8 @@
 # Phase 7 offline Gemini investigation
 
+Historical record: model references and results below describe their original
+run. The configured model is now 3.6; see [the migration record](gemini-3.6-migration.md).
+
 Date: 2026-10-14. Model remains gemini-3.8-flash. No live generation or metadata
 requests were made during this investigation. No billing, fallback, deployment,
 or model/provider changes were made. Historical ignored reports are preserved.

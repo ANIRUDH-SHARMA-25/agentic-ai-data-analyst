@@ -80,7 +80,7 @@ the whole .env to containers. Never use `env_file: .env` for the frontend.
 | DATASET_TTL_SECONDS / MAX_ACTIVE_DATASETS | 1800 / 20; backend |
 | GOOGLE_API_KEY | empty; backend runtime only |
 | GOOGLE_FREE_TIER_CONFIRMED | false; set true only after checking Free project/billing disabled |
-| GOOGLE_MODEL | gemini-3.8-flash; backend |
+| GOOGLE_MODEL | gemini-3.6-flash; backend |
 | GOOGLE_TIMEOUT_SECONDS / GOOGLE_MAX_OUTPUT_TOKENS | 30 / 1200; backend |
 | FRONTEND_REQUEST_TIMEOUT_SECONDS / FRONTEND_ANALYSIS_TIMEOUT_SECONDS | 30 / 300 |
 
@@ -186,7 +186,7 @@ interpolation, then recreate the backend with
 `docker compose up -d --no-deps --force-recreate backend`. Do not put keys in
 Dockerfiles, build arguments, URLs, command history containing literal values,
 GitHub workflow secrets for this key-free CI, or frontend settings. Set GOOGLE_FREE_TIER_CONFIRMED=true only after checking AI Studio shows Free
-and billing is disabled. The model is restricted to gemini-3.8-flash, with no
+and billing is disabled. The model is restricted to gemini-3.6-flash, with no
 Vertex AI, Enterprise route, paid fallback, or retries. Runtime
 environment credentials are visible to administrators who can inspect containers;
 they are not a secret vault. Do not share expanded config/inspect environment
@@ -217,7 +217,7 @@ preparation only; no cloud deployment or new infrastructure is authorized.
 
 
 Phase 7 updates only provider configuration: GOOGLE_* replaces OPENAI_*, with
-Gemini 3.8 Flash approved by the user. Keep keys out of frontend containers.
+Gemini 3.6 Flash now explicitly approved after isolated diagnostics. Keep keys out of frontend containers.
 Free-tier content may be used by Google to improve products; use synthetic data.
 The Windows setup script encrypts a local key for direct Python startup; Compose
 does not read that encrypted file. For Compose supply the optional key securely

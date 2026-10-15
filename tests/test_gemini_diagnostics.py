@@ -30,7 +30,7 @@ def test_actual_agent_wire_and_signature_replay(monkeypatch, retail_frame):
     bodies = []
     def handler(request):
         assert request.url.host == "generativelanguage.googleapis.com"
-        assert request.url.path == "/v1beta/models/gemini-3.8-flash:generateContent"
+        assert request.url.path == "/v1beta/models/gemini-3.6-flash:generateContent"
         bodies.append(json.loads(request.content))
         if len(bodies) == 1:
             part = {"functionCall": {"name": "inspect_dataset", "args": {}}, "thoughtSignature": "c2lnbmF0dXJl"}

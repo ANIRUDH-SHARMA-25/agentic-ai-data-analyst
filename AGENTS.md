@@ -4,8 +4,8 @@
 Phases 1-8 are authorized: CSV processing, internal DuckDB helpers, dataset
 sessions, FastAPI, one LangChain create_agent workflow using LangGraph and
 langchain-google-genai, the Gemini Developer API, restricted SQL, and deterministic tests.
-Use gemini-3.8-flash only, as approved by the user after Google restricted 2.5
-Flash to existing users. No model/provider fallback. Phase 4 adds native Streamlit and deterministic
+Use gemini-3.6-flash only, explicitly approved after successful isolated
+plain-text and automatic function-calling diagnostics. No model/provider fallback. Phase 4 adds native Streamlit and deterministic
 Plotly charts over the existing HTTP API. Phase 5 adds bounded dataset-bound
 conversation memory and deterministic mocked evaluations. Phase 6 adds local
 Docker Compose, basic CI, and deployment documentation. Phase 7 switches providers and permits a small live evaluation only after
@@ -84,7 +84,7 @@ report blocked Docker runtime checks accurately. Keep generated reports on D:.
 
 ## Phase 7 zero-cost requirements
 Use Gemini Developer API explicitly (vertexai=False), GOOGLE_API_KEY only in
-the backend, and GOOGLE_MODEL=gemini-3.8-flash. Before model construction require
+the backend, and GOOGLE_MODEL=gemini-3.6-flash. Before model construction require
 GOOGLE_FREE_TIER_CONFIRMED=true, a human confirmation that the project is Free
 with billing disabled; this is not an API billing verification. Never enable
 billing, register payment methods, buy credits, use paid APIs, add OpenAI
@@ -108,3 +108,16 @@ and mocked charts without a provider key; never label scripted output Gemini.
 Run full offline tests, benchmark, dependencies/imports and available static
 container checks; verify secret/artifact exclusions, then commit/push to main
 and check CI. Stop after Phase 8; no subsequent live test is authorized.
+
+
+## Controlled Gemini 3.6 migration (2026-10-15)
+The user explicitly authorized replacing the configured model and allowlist with
+gemini-3.6-flash and committing/pushing the migration to main. This supersedes
+the historical 3.8-only setting, not the single-agent/SQL/session architecture.
+Preserve LOW thinking, TEXT output, omitted sampling parameters, fixed Developer
+API routing, free-project confirmation, zero retries and no fallback. Isolated
+3.6 plain-text and AUTO inspect_dataset diagnostics passed; end-to-end agent
+SQL/follow-up/chart verification remains pending. Make no generation or metadata
+requests during migration. Preserve ignored encrypted keys and historical reports.
+Run all offline checks and CI, propose a separately approval-gated bounded live
+evaluation, then stop. No Docker/WSL installation, billing or public deployment.

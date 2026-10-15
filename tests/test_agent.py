@@ -140,7 +140,7 @@ def provider_error(kind):
     status, expected = {"auth": (401, 503), "permission": (403, 503), "rate": (429, 429)}[kind]
     error = ClientError(status, {"error": {"code": status, "message": "private runtime details", "status": "TEST"}})
     try:
-        _handle_client_error(error, {"model": "gemini-3.8-flash"})
+        _handle_client_error(error, {"model": "gemini-3.6-flash"})
     except Exception as wrapped:
         return wrapped, expected
 
@@ -163,7 +163,7 @@ def test_gemini_model_configuration_without_network(monkeypatch):
         return SimpleNamespace(client=SimpleNamespace(vertexai=False, enterprise=False))
     monkeypatch.setattr("backend.agent.analyst.ChatGoogleGenerativeAI", constructor)
     create_gemini_model(AgentSettings(api_key="test-only", free_tier_confirmed=True, model_timeout_seconds=10, max_output_tokens=500))
-    assert captured["model"] == "gemini-3.8-flash"
+    assert captured["model"] == "gemini-3.6-flash"
     assert captured["timeout"] == 10 and captured["max_output_tokens"] == 500
     assert captured["max_retries"] == 0
     assert captured["vertexai"] is False
@@ -199,7 +199,7 @@ def test_free_tier_confirmation_precedes_client_construction(monkeypatch):
     assert caught.value.status_code == 503
 
 
-@pytest.mark.parametrize("model", ["gemini-2.5-flash", "gemini-4-argon", "gpt-4.1-mini", "models/gemini-3.8-flash"])
+@pytest.mark.parametrize("model", ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-4-argon", "gpt-4.1-mini", "models/gemini-3.6-flash"])
 def test_no_alternative_model_is_accepted(model):
     with pytest.raises(ValueError, match="no model fallback"):
         AgentSettings(model=model)
@@ -212,7 +212,7 @@ def test_settings_ignore_inherited_provider_routes_and_keys(monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "paid-route")
     settings = AgentSettings.from_environment()
     assert not settings.api_key and not settings.free_tier_confirmed
-    assert settings.model == "gemini-3.8-flash"
+    assert settings.model == "gemini-3.6-flash"
 
 
 @pytest.mark.parametrize("code,expected", [(429,429),(403,503),(404,503),(504,504),(500,502)])
