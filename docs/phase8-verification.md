@@ -84,3 +84,26 @@ push-triggered CI outcome are reported at handoff after verification.
 Remaining: real Streamlit browser acceptance, Docker image/runtime verification,
 and all public-hosting security requirements in acceptance-checks.md. Future
 provider requests and deployment require separate explicit approval.
+
+
+## Final browser documentation handoff (2026-10-16)
+
+The separately approved [real-browser acceptance](../evaluations/streamlit-browser-verification.md)
+passed two synthetic questions through actual Brave/Streamlit in six real Gemini
+3.6 Flash generation requests, all HTTP 200. Actual tools/SQL, correct category
+totals, both explanations, Home/150 contextual follow-up, Plotly rendering and
+New conversation clearing/backend reset passed. No new generation was used for
+reset. Screenshots and bounded reports stay ignored on D:; only sanitized facts
+are documented. Earlier provider/quota failures remain historical evidence.
+
+This handoff changes documentation only and makes no Gemini requests, key
+loading, model/billing change, package/Docker installation or deployment.
+Verification: 524 offline tests, 28/28 MOCKED benchmark cases, dependency and
+key-free import checks. Commit/hash and push-triggered CI are reported after
+verification at handoff. Browser evidence, backend live evidence and scripted
+benchmark coverage remain separate; general model accuracy and production or
+public-hosting readiness are not claimed.
+
+Remaining: Docker runtime untested, direct file-picker upload not manually
+verified, and all public-hosting security requirements outstanding. The verified
+local synthetic Streamlit workflow does not authorize further provider calls.

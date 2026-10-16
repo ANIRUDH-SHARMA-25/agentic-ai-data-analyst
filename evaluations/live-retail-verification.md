@@ -68,14 +68,15 @@ semantic truth judge; see the [offline investigation](final-explanation-investig
 Historical provider/evaluator failures remain documented in
 [two-question history](two-question-status.md) and [Phase 7 history](phase7-live-status.md).
 
-## Remaining acceptance work
+## Later actual browser acceptance and remaining work
 
-- Real Streamlit browser testing of genuine answers, tables, charts and session
-  reset; API TestClient and Plotly generation do not establish browser behavior.
-- Docker image builds and runtime/resource/permission/restart smoke checks in a
-  separately authorized environment; Docker was not installed for this work.
-- Public hosting requires the authentication, tenant ownership, independent SQL
-  isolation, quotas, cancellation, HTTPS, secrets, lifecycle and recovery work
-  described in [security readiness](../docs/security-readiness.md).
+On 2026-10-16, a separately approved real Brave/Streamlit run passed the two
+retail questions in six additional generation requests, including genuine
+answer/SQL/table/Plotly rendering and New conversation reset. The six requests
+above remain the October 15 backend run, not a combined run count. See the
+[browser verification record](streamlit-browser-verification.md).
 
-No further live test or public deployment is authorized by this record.
+Remaining work: manually verify direct file-picker upload, perform separately
+authorized Docker image/runtime checks, and address all public-hosting security
+requirements. The synthetic browser success is not general model accuracy,
+production readiness or permission for more API calls/deployment.

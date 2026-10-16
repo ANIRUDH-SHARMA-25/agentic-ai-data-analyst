@@ -140,5 +140,10 @@ reply or claim excerpt is printed to the console or committed. This diagnostic
 exception does not apply to private datasets or the four-question runner.
 The `--first-question-only` option limits a separately approved run to one
 question/four attempts; the default is exactly two questions/eight attempts.
-No further generation or metadata requests are authorized. Real Streamlit
-browser testing and Docker runtime verification remain outstanding.
+A separately approved October 16 real Brave/Streamlit run subsequently passed
+both questions in six real generation requests, including actual answer/table/
+SQL/chart rendering and New conversation reset. See the
+[browser verification record](streamlit-browser-verification.md). This is a
+separate narrow live run, not part of the 28 mocked cases. No further provider
+requests are authorized. Manual file-picker acceptance, Docker runtime and
+public-hosting security work remain outstanding.

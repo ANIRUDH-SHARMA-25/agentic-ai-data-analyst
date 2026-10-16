@@ -1,5 +1,11 @@
 # Prepared Gemini browser acceptance plan: NOT authorized for execution
 
+> Later result (2026-10-16): a separately approved guarded real-browser run
+> passed both questions in six successful Gemini requests and verified visible
+> explanations, SQL/tables, Plotly charts, context and New conversation reset.
+> See [the browser record](streamlit-browser-verification.md). Historical failures
+> and proposals below remain preserved; no further API request is authorized.
+
 > Historical plan: execution was separately approved and stopped on Question 1's
 > third request with Google HTTP 429 RESOURCE_EXHAUSTED. The user later observed
 > historical RPD 21/20 in AI Studio. See the [quota investigation](browser-quota-investigation.md).

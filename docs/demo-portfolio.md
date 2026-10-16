@@ -23,8 +23,11 @@
    [bounded live record](../evaluations/live-retail-verification.md): Gemini 3.6
    passed two synthetic retail questions in six real generation requests,
    including actual tool/SQL execution, both final explanations, same-ID context
-   and Home/150 follow-up correctness. Plotly generation passed; a real Streamlit
-   browser acceptance session and Docker runtime remain unverified. Show only
+   and Home/150 follow-up correctness. The separately approved October 16
+   [real-browser check](../evaluations/streamlit-browser-verification.md) also
+   passed two questions in six requests, with genuine answers, SQL tables,
+   Plotly charts and New conversation reset verified in Streamlit. Docker
+   runtime and manual file-picker acceptance remain unverified. Show only
    the sanitized tracked summary; retained replies/charts stay local and ignored.
    Do not send a new provider request during this key-free demo.
 
@@ -66,14 +69,17 @@ Use only wording consistent with your own contribution and demonstrated scope:
   and an automated suite covering API, SQL rejection, sessions and UI behavior.
 - Verified two synthetic retail questions using six real Gemini 3.6 Flash
   requests, including validated SQL, grounded explanations, a contextual Home/150
-  follow-up and Plotly chart generation; kept this distinct from mocked coverage.
+  follow-up and Plotly chart generation; additionally verified the same bounded
+  workflow in a six-request real Streamlit browser test, including display and
+  conversation reset, distinct from mocked coverage.
 - Completed a focused security review, fixing oversized analysis-body parsing
   and untrusted Markdown rendering; documented public-hosting prerequisites.
 
 Do not claim production deployment, broad real-model accuracy, independent
 security certification or sole authorship without separate evidence. The live
 success is limited to two synthetic retail questions and six requests; it is not
-a reliability study or browser test. See phase8-verification.md for the final
-automated count and acceptance-checks.md for remaining browser, Docker and
-public-hosting requirements. Historical 3.8 unavailability does not describe the
+a broad accuracy or reliability study. The browser-tested scope is the local
+two-question synthetic workflow. See phase8-verification.md for offline counts
+and acceptance-checks.md for manual file-picker, Docker runtime and public-hosting
+requirements. Historical 3.8 unavailability does not describe the
 successful 3.6 run or guarantee future provider availability.

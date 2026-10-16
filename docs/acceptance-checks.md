@@ -17,18 +17,30 @@ See the [bounded live record](../evaluations/live-retail-verification.md).
 This is two live questions, separate from the 28-case mocked benchmark; broad
 real-model accuracy and production readiness are not established.
 
+## Completed actual browser acceptance (2026-10-16)
+
+Both retail questions passed through actual Brave/Streamlit in six real Gemini
+3.6 Flash requests, all HTTP 200. Genuine explanations, executed SQL/tool panels,
+correct tables, Plotly charts and same-conversation Home/150 follow-up rendered
+and passed checks. New conversation cleared both displayed turns/results and
+reset backend context while preserving the dataset; generation count stayed 6.
+The tested local synthetic workflow is verified. See the
+[browser acceptance record](../evaluations/streamlit-browser-verification.md).
+This separate browser run does not expand the 28 mocked cases into real-model
+accuracy evidence or establish production readiness.
+
 ## Remaining local acceptance checks
 
-1. Review genuine Streamlit answers/tables/charts in a real browser, including
-   reruns and session reset. Mocked AppTest and live API/chart evidence are
-   distinct from a completed browser acceptance session. Any additional Gemini
-   request needs fresh explicit approval, a request cap and Free-tier confirmation.
-2. In a separately approved environment already equipped with Docker, build both
-   images and perform key-free health/upload/inspection/restart/permission/resource
-   smoke checks. Static configuration review is not runtime proof. Do not install
-   Docker/WSL as part of the current finalization.
-3. Broader synthetic datasets/question coverage and robustness measurements may
-   be useful later, but are optional future work requiring separate live approval.
+1. Manually verify direct file-picker CSV upload. Automation was blocked by
+   extension permissions, which were not changed. The sample-button path used
+   real CSV upload/inspection and passed.
+2. In a separately approved environment with Docker already available, build
+   both images and run key-free health/upload/inspection/restart/permission/
+   resource smoke checks. Static configuration review is not runtime proof;
+   Docker/WSL installation is outside current scope.
+3. Broader dataset/question and robustness measurements are optional future
+   work. Any new Gemini request needs fresh explicit approval, a request cap,
+   Free-tier/billing-disabled confirmation, zero retries and no fallback.
 
 ## Public-hosting requirements: separate scope
 
@@ -40,13 +52,10 @@ multi-user recovery tests. UUIDs, validated SQL and a container alone do not
 satisfy these requirements. No public deployment is authorized.
 
 
-Browser follow-up status (2026-10-15): the key-free smoke test passed with the
-sample button (direct file-picker automation remained blocked). The separately
-approved genuine browser test executed correct schema/SQL but stopped at its
-third generation on Google 429 RESOURCE_EXHAUSTED; final answers, analysis charts
-and nonempty reset remain unverified in a real browser. User-reported historical
-RPD 21/20 supports daily quota exhaustion; the 28-day peak view does not prove
-current quota availability after reset. The browser wrapper's incorrect 422
-mapping is corrected offline. See the
-[quota investigation](../evaluations/browser-quota-investigation.md). Wait for a
-reset, fresh Free-tier confirmation and separate approval before any new calls.
+Historical browser status (2026-10-15): correct schema/SQL was followed by
+Google 429 RESOURCE_EXHAUSTED on the third generation; final rendering/reset
+were not completed in that run. User-reported historical RPD 21/20 supports daily
+quota exhaustion; its 28-day peak view did not prove current availability.
+The 422 mapping defect was fixed offline before the separately approved
+October 16 browser success. See the
+[quota investigation](../evaluations/browser-quota-investigation.md).

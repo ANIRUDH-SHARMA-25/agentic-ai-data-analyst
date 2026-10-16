@@ -1,5 +1,11 @@
 # Browser acceptance quota failure: offline diagnosis and mapping fix
 
+> Later result (2026-10-16): a separately approved guarded real-browser run
+> passed both questions in six successful Gemini requests and verified visible
+> explanations, SQL/tables, Plotly charts, context and New conversation reset.
+> See [the browser record](streamlit-browser-verification.md). Historical failures
+> and proposals below remain preserved; no further API request is authorized.
+
 Date: 2026-10-15. No Gemini generation or metadata request, key loading,
 billing/model change, retry, installation or deployment occurred during this
 investigation. The historical live report and reviewed screenshot remain

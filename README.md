@@ -5,21 +5,24 @@ LangChain/LangGraph agent. The agent can inspect a selected dataset, request
 statistics and generate restricted DuckDB SQL; Plotly charts visualize returned
 values using deterministic rules.
 
-**Status: local-development-only.** Gemini 3.6 Flash passed a separately approved
-live two-question synthetic retail evaluation on 2026-10-15: grouped category
-revenue and a contextual second-category follow-up. All six real generation
-requests succeeded. Actual schema inspection and validated SQL execution,
-Electronics 260 / Home 150 / Stationery 120, both final explanations, same-ID
-conversation continuity and Plotly chart generation were verified.
-This narrow live check is separate from the **28-case mocked benchmark** and
-is not a broad real-model accuracy measurement. See the
-[live verification record](evaluations/live-retail-verification.md).
-A later browser acceptance run stopped before its first final explanation with
-Google 429; user-observed historical daily usage was 21/20. Current post-reset
-quota is unverified. See the [quota diagnosis and offline fix](evaluations/browser-quota-investigation.md).
-Real Streamlit browser testing, Docker image/runtime verification and public-
-hosting security work remain outstanding. No public deployment is authorized;
-any further provider request requires fresh explicit approval.
+**Status: verified local synthetic Streamlit workflow; local-development-only.**
+On 2026-10-16, both approved retail questions passed through the actual Brave/
+Streamlit interface using **six real Gemini 3.6 Flash generation requests**, all
+HTTP 200. Actual schema inspection and SQL execution, Electronics 260 / Home 150 /
+Stationery 120, both genuine final explanations, same-conversation Home/150
+follow-up, result tables, Plotly charts and New conversation reset were verified.
+See the [real-browser acceptance record](evaluations/streamlit-browser-verification.md).
+
+This narrow browser check is separate from the **28-case mocked benchmark** and
+the [earlier backend live evaluation](evaluations/live-retail-verification.md).
+It establishes neither general model accuracy nor production/public-deployment
+readiness. The earlier daily-quota failure remains documented in the
+[quota investigation](evaluations/browser-quota-investigation.md); a successful
+run does not guarantee future quota or provider availability.
+
+Docker runtime remains untested, direct file-picker upload has not been manually
+verified, and public-hosting security requirements remain outstanding. Any further
+provider request or deployment requires fresh explicit approval.
 
 ## Capabilities and stack
 
@@ -59,8 +62,8 @@ statistics or a validated SELECT, then explains tool evidence. Only one tool
 per turn is permitted; at most one SQL correction is allowed. Five compact
 successful turns can resolve references, but cannot replace fresh evidence.
 Gemini chooses tool calls and produces prose; it does not execute Python or
-chart code. Charts are built locally. The two-question synthetic workflow is live-verified;
-broader datasets and question coverage remain unmeasured.
+chart code. Charts are built locally. The two-question synthetic workflow, including browser rendering
+and conversation reset, is live-verified; broader coverage remains unmeasured.
 See [module responsibilities and interview explanation](docs/architecture.md).
 
 ## Local Python setup
@@ -187,6 +190,8 @@ See [security readiness](docs/security-readiness.md),
 ## Demo and portfolio
 
 [Demo guide and resume suggestions](docs/demo-portfolio.md) distinguish the
-verified two-question Gemini analysis and follow-up from the 28 mocked cases.
-Real Streamlit browser review, public hosting and general real-model accuracy
-are not claimed. Further live testing and deployment require separate approval.
+verified two-question Streamlit browser workflow from the 28 mocked cases and
+prior backend-only evidence. Direct file-picker acceptance, Docker runtime and
+public-hosting security work remain open. Broad real-model accuracy, production
+readiness and public deployment are not claimed. Further live testing and
+deployment require separate approval.
